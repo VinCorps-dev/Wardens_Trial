@@ -9,9 +9,13 @@ class PhysicsEntity:
         self.velocity = [0, 0]
         self.collisions = { 'up': False, 'down': False, 'left': False, 'right': False }
 
-
     def rect(self):
-        return pygame.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1])
+        return pygame.Rect(
+            int(self.pos[0]),
+            int(self.pos[1]),
+            self.size[0],
+            self.size[1]
+        )
 
     def update(self, Tilemap, movement=(0, 0)):
         self.collisions = {'up': False, 'down': False, 'left': False, 'right': False}
@@ -43,6 +47,27 @@ class PhysicsEntity:
                     self.collisions['up'] = True
                 self.pos[1] = entity_rect.y
 
+        player_rect = self.rect()
+
+        for tile in Tilemap.tilemap.values():
+
+            if tile["type"] != "deadly":
+                continue
+
+            tx, ty = tile["pos"]
+
+            spike_rect = pygame.Rect(
+                tx * Tilemap.tile_size,
+                ty * Tilemap.tile_size,
+                Tilemap.tile_size,
+                Tilemap.tile_size
+            )
+
+            if player_rect.colliderect(spike_rect):
+                print("YOU DIED")
+                self.pos = [50, 50]
+                self.velocity = [0, 0]
+                return
         self.velocity[1] = min(5, self.velocity[1] + 0.1)
 
         if self.collisions['down'] or self.collisions['up']:

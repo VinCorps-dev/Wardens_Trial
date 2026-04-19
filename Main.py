@@ -5,6 +5,7 @@ import sys
 from Scripts.Entities import PhysicsEntity
 from Scripts.Utilities import load_image, load_images
 from Scripts.Tilemap import Tilemap
+from Scripts.Utilities import load_spritesheet
 
 class Game:
     def __init__(self):
@@ -18,10 +19,7 @@ class Game:
         self.movement = [False,False]
 
         self.assets ={
-            'decor' : load_images('Tilesets/decor'),
-            'grass': load_images('Tilesets/grass'),
-            'large_decor' : load_images('Tilesets/large_decor'),
-            'stone': load_images('Tilesets/stone'),
+            'tiles': load_spritesheet('Tilesets/Dungeon Tile Set.png', 16),
             'player': load_image('Character/player.png')
         }
 
