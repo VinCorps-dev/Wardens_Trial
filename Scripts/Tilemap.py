@@ -29,29 +29,27 @@ class Tilemap:
         return rects
 
     def render(self, surf, offset=(0, 0)):
+        # draw using Tiled layer order
+        for layer in self.tmx_data.visible_layers:
+            if hasattr(layer, "data"):
+                for x, y, gid in layer:
+                    if gid == 0:
+                        continue
 
-        for tile in self.offgrid_tiles:
-            surf.blit(
-                self.game.assets['tiles'][tile['variant']],
-                (tile['pos'][0] - offset[0], tile['pos'][1] - offset[1])
-            )
+                    image = self.tmx_data.get_tile_image_by_gid(gid)
 
-        for location in self.tilemap:
-            tile = self.tilemap[location]
-
-            img = tile.get("image")
-
-            if img:
-                surf.blit(
-                    img,
-                    (
-                        tile['pos'][0] * self.tile_size - offset[0],
-                        tile['pos'][1] * self.tile_size - offset[1]
-                    )
-                )
+                    if image:
+                        surf.blit(
+                            image,
+                            (
+                                x * self.tile_size - offset[0],
+                                y * self.tile_size - offset[1]
+                            )
+                        )
 
     def load_tmx(self, filename):
-        tmx_data = pytmx.load_pygame(filename)
+        self.tmx_data = pytmx.load_pygame(filename)
+        tmx_data = self.tmx_data
 
         for layer in tmx_data:
             if hasattr(layer, "data"):
@@ -61,14 +59,14 @@ class Tilemap:
 
 
                     props = tmx_data.get_tile_properties_by_gid(gid) or {}
-                    print("TILE:", x, y, gid, props)
+
 
                     tile_type = (props.get("type") or "").lower()
                     final_type = tile_type
 
                     image = tmx_data.get_tile_image_by_gid(gid)
 
-                    print(tile_type, "→", final_type)
+
 
                     self.tilemap[f"{x};{y}"] = {
                         "type": final_type,

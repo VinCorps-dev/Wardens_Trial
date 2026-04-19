@@ -8,6 +8,8 @@ class PhysicsEntity:
         self.size = size
         self.velocity = [0, 0]
         self.collisions = { 'up': False, 'down': False, 'left': False, 'right': False }
+        self.jumps = 0
+        self.max_jumps = 2
 
     def rect(self):
         return pygame.Rect(
@@ -64,13 +66,16 @@ class PhysicsEntity:
             )
 
             if player_rect.colliderect(spike_rect):
-                print("YOU DIED")
+
                 self.pos = [50, 50]
                 self.velocity = [0, 0]
                 return
         self.velocity[1] = min(5, self.velocity[1] + 0.1)
 
-        if self.collisions['down'] or self.collisions['up']:
+        if self.collisions['down']:
+            self.velocity[1] = 0
+            self.jumps = 0  # reset jumps when touching ground
+        elif self.collisions['up']:
             self.velocity[1] = 0
 
     def render(self, surf, offset=(0, 0)):

@@ -23,7 +23,7 @@ class Game:
             'player': load_image('Character/player.png')
         }
 
-        self.player = PhysicsEntity(self, 'player', (50, 50), (8, 15))
+        self.player = PhysicsEntity(self, 'player', (-5, 10), (8, 15))
 
         self.Tilemap = Tilemap(self, tile_size= 16)
 
@@ -32,7 +32,7 @@ class Game:
 
     def run(self):
         while True:
-            self.display.fill((14, 219, 248))
+            self.display.fill((0, 0, 0))
 
             self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 30
             self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 30
@@ -56,7 +56,9 @@ class Game:
                     if event.key == pygame.K_RIGHT:
                         self.movement[1] = True
                     if event.key == pygame.K_UP:
-                        self.player.velocity[1] = -3
+                        if self.player.jumps < self.player.max_jumps:
+                            self.player.velocity[1] = -3
+                            self.player.jumps += 1
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT:
                         self.movement[0] = False
