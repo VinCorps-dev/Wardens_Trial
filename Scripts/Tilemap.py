@@ -2,7 +2,7 @@ import pygame
 import pytmx
 NEIGHBOR_OFFSETS = [(-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (0, 0), (-1, 1), (0, 1), (1,1)]
 PHYSICS_TILES = {'tiles'}
-
+PLATFORM_TILES = {'platform'}
 
 class Tilemap:
     def __init__(self, game, tile_size = 16):
@@ -10,6 +10,7 @@ class Tilemap:
         self.tile_size = tile_size
         self.tilemap = {}
         self.offgrid_tiles = []
+        self.spawn_point = (50, 50)  # default FIRST
         self.load_tmx("Levels/Map 1.tmx")
 
     def tiles_around(self, position):
@@ -27,6 +28,8 @@ class Tilemap:
             if tile['type'] in PHYSICS_TILES:
                 rects.append(pygame.Rect(tile['pos'][0] * self.tile_size, tile['pos'][1] * self.tile_size, self.tile_size, self.tile_size))
         return rects
+
+
 
     def render(self, surf, offset=(0, 0)):
         # draw using Tiled layer order
@@ -47,11 +50,12 @@ class Tilemap:
                             )
                         )
 
+
     def load_tmx(self, filename):
         self.tmx_data = pytmx.load_pygame(filename)
         tmx_data = self.tmx_data
 
-        for layer in tmx_data:
+        for layer in tmx_data.visible_layers:
             if hasattr(layer, "data"):
                 for x, y, gid in layer:
                     if gid == 0:
@@ -60,9 +64,14 @@ class Tilemap:
 
                     props = tmx_data.get_tile_properties_by_gid(gid) or {}
 
+                    tile_type = props.get("type")
 
-                    tile_type = (props.get("type") or "").lower()
-                    final_type = tile_type
+                    if isinstance(tile_type, str):
+                        final_type = tile_type.strip().lower()
+                    else:
+                        final_type = ""
+
+
 
                     image = tmx_data.get_tile_image_by_gid(gid)
 
@@ -74,11 +83,16 @@ class Tilemap:
                         "pos": (x, y)
                     }
 
+    # --- FIND SPAWN POINT ---
+        for obj in self.tmx_data.objects:
+            if obj.name == "spawn":
+                self.spawn_point = (obj.x, obj.y)
+
 
     def deadly_rects_around(self, position):
         rects = []
         for tile in self.tiles_around(position):
-            if tile['type'] == 'spike':
+            if tile['type'] == 'deadly':
                 rects.append(pygame.Rect(
                     tile['pos'][0] * self.tile_size,
                     tile['pos'][1] * self.tile_size,

@@ -6,6 +6,7 @@ from Scripts.Entities import PhysicsEntity
 from Scripts.Utilities import load_image, load_images
 from Scripts.Tilemap import Tilemap
 from Scripts.Utilities import load_spritesheet
+from Scripts.Audio import Audio
 
 class Game:
     def __init__(self):
@@ -23,11 +24,20 @@ class Game:
             'player': load_image('Character/player.png')
         }
 
-        self.player = PhysicsEntity(self, 'player', (-5, 10), (8, 15))
-
         self.Tilemap = Tilemap(self, tile_size= 16)
 
+        # ✅ THEN GET SPAWN
+        spawn = self.Tilemap.spawn_point
+
+        # ✅ THEN CREATE PLAYER
+        self.player = PhysicsEntity(self, 'player', spawn, (8, 15))
+
         self.scroll = [0, 0]
+
+        self.scroll = [0, 0]
+
+        self.audio = Audio()
+        self.audio.play_music("Assets/Music/Background Music.mp3", 0.4)
 
 
     def run(self):
@@ -37,12 +47,27 @@ class Game:
             self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 30
             self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 30
 
+            map_width = self.Tilemap.tmx_data.width * self.Tilemap.tile_size
+            map_height = self.Tilemap.tmx_data.height * self.Tilemap.tile_size
+
+            self.scroll[0] = max(0, min(self.scroll[0], map_width - self.display.get_width()))
+            self.scroll[1] = max(0, min(self.scroll[1], map_height - self.display.get_height()))
+
+
             render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
 
             # 3. Now you use 'render_scroll' for BOTH of these
             self.Tilemap.render(self.display, offset=render_scroll)
 
-            self.player.update(self.Tilemap, (self.movement[1] - self.movement[0], 0))
+            map_w = self.Tilemap.tmx_data.width * self.Tilemap.tile_size
+            map_h = self.Tilemap.tmx_data.height * self.Tilemap.tile_size
+
+
+            self.player.update(
+                self.Tilemap,
+                (self.movement[1] - self.movement[0], 0),
+                (map_w, map_h)
+            )
             self.player.render(self.display, offset=render_scroll)
 
 
@@ -64,6 +89,14 @@ class Game:
                         self.movement[0] = False
                     if event.key == pygame.K_RIGHT:
                         self.movement[1] = False
+
+                if event.type == pygame.KEYDOWN: # Platform na pwede bumababa
+                    if event.key == pygame.K_DOWN:
+                        self.player.drop_through = True
+
+                if event.type == pygame.KEYUP:  # Platform na pwede bumaba
+                    if event.key == pygame.K_DOWN:
+                        self.player.drop_through = False
 
             self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
             pygame.display.update()
