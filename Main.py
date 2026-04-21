@@ -21,13 +21,13 @@ class Game:
 
         self.assets ={
             'tiles': load_spritesheet('Tilesets/Dungeon Tile Set.png', 16),
-            'player': load_image('Character/player.png')
+            'player': load_image('Character/agnosia_testing idle.png')
         }
 
         self.Tilemap = Tilemap(self, tile_size= 16)
 
         # ✅ THEN GET SPAWN
-        spawn = self.Tilemap.spawn_point
+        spawn = (self.Tilemap.spawn_point[0], self.Tilemap.spawn_point[1] - 16)
 
         # ✅ THEN CREATE PLAYER
         self.player = PhysicsEntity(self, 'player', spawn, (8, 15))
@@ -37,7 +37,7 @@ class Game:
         self.scroll = [0, 0]
 
         self.audio = Audio()
-        self.audio.play_music("Assets/Music/Background Music.mp3", 0.4)
+        self.audio.play_music("Assets/Audio/Background#3_Level 3.mp3", 0.4)
 
 
     def run(self):

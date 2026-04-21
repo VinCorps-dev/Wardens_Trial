@@ -54,13 +54,6 @@ class PhysicsEntity:
 
                 self.pos[1] = entity_rect.y
 
-                if frame_movement[1] > 0:
-                    entity_rect.bottom = rect.top
-                    self.collisions['down'] = True
-                if frame_movement[1] < 0:
-                    entity_rect.top = rect.bottom
-                    self.collisions['up'] = True
-                self.pos[1] = entity_rect.y
 
         for tile in Tilemap.tiles_around(self.pos): #Platform Logic
 
@@ -121,4 +114,11 @@ class PhysicsEntity:
             self.pos[1] = max(0, min(self.pos[1], map_h - self.size[1]))
 
     def render(self, surf, offset=(0, 0)):
-        surf.blit(self.game.assets['player'], (self.pos[0] - offset[0], self.pos[1] - offset[1]))
+        img = self.game.assets['player']
+
+        rect = img.get_rect(midbottom=(
+            self.pos[0] + self.size[0] / 2 - offset[0],
+            self.pos[1] + self.size[1] - offset[1]
+        ))
+
+        surf.blit(img, rect)
