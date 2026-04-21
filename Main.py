@@ -27,10 +27,8 @@ class Game:
         self.Tilemap = Tilemap(self, tile_size= 16)
 
         # ✅ THEN GET SPAWN
-        spawn = (self.Tilemap.spawn_point[0], self.Tilemap.spawn_point[1] - 16)
-
-        # ✅ THEN CREATE PLAYER
-        self.player = PhysicsEntity(self, 'player', spawn, (8, 15))
+        spawn = (self.Tilemap.spawn_point[0], self.Tilemap.spawn_point[1] - 32)  # Offset for height
+        self.player = PhysicsEntity(self, 'player', spawn, (16, 32))
 
         self.scroll = [0, 0]
 

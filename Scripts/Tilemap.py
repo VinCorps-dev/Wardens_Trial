@@ -15,11 +15,17 @@ class Tilemap:
 
     def tiles_around(self, position):
         tiles = []
-        tile_location = (int(position[0] // self.tile_size)), (int(position[1] // self.tile_size))
-        for offset in NEIGHBOR_OFFSETS:
-            check_location = str(tile_location[0] + offset[0]) + ';' + str(tile_location[1] + offset[1])
-            if check_location in self.tilemap:
-                tiles.append(self.tilemap[check_location])
+        # 🔥 Bigger check area for tall player
+        tile_x = int(position[0] // self.tile_size)
+        tile_y = int(position[1] // self.tile_size)
+
+        # Check MORE tiles for tall collision box
+        for dx in range(-2, 3):  # Wider X range
+            for dy in range(-3, 4):  # Taller Y range (32px player)
+                check_x, check_y = tile_x + dx, tile_y + dy
+                check_location = f"{check_x};{check_y}"
+                if check_location in self.tilemap:
+                    tiles.append(self.tilemap[check_location])
         return tiles
 
     def physics_rects_around(self, position):
@@ -71,11 +77,7 @@ class Tilemap:
                     else:
                         final_type = ""
 
-
-
                     image = tmx_data.get_tile_image_by_gid(gid)
-
-
 
                     self.tilemap[f"{x};{y}"] = {
                         "type": final_type,
