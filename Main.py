@@ -7,6 +7,7 @@ from Scripts.Utilities import load_image, load_images
 from Scripts.Tilemap import Tilemap
 from Scripts.Utilities import load_spritesheet
 from Scripts.Audio import Audio
+from Scripts.Ui_sa_game import UserInterface
 
 class Game:
     def __init__(self):
@@ -14,6 +15,7 @@ class Game:
         pygame.display.set_caption("Warden's Trial")
         self.screen = pygame.display.set_mode((640, 480))
         self.display = pygame.Surface((320, 240))
+        self.ui = UserInterface(self)
 
         self.clock = pygame.time.Clock()
 
@@ -21,7 +23,7 @@ class Game:
 
         self.assets ={
             'tiles': load_spritesheet('Tilesets/Dungeon Tile Set.png', 16),
-            'player': load_image('Character/agnosia_testing idle.png')
+            'player': load_image('Character/sprite.png')
         }
 
         self.Tilemap = Tilemap(self, tile_size= 16)
@@ -41,6 +43,7 @@ class Game:
     def run(self):
         while True:
             self.display.fill((0, 0, 0))
+            dt = self.clock.tick(60) / 1000.0
 
             self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 30
             self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 30
@@ -73,6 +76,9 @@ class Game:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
+                self.ui.manager.process_events(event)
+
+
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_LEFT:
                         self.movement[0] = True
@@ -97,7 +103,9 @@ class Game:
                         self.player.drop_through = False
 
             self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
+            self.ui.update(dt)  # Ito yung magka-calculate ng progress bar
+            self.ui.draw(self.screen)  # Draw directly to the big screen
             pygame.display.update()
-            self.clock.tick(60),
+
 
 Game().run()

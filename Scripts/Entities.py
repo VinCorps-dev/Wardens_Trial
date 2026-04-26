@@ -23,62 +23,78 @@ class PhysicsEntity:
     def update(self, Tilemap, movement=(0, 0), map_bounds=None):
         self.collisions = {'up': False, 'down': False, 'left': False, 'right': False}
 
+        # --- 1. X AXIS MOVEMENT ---
         frame_movement = (movement[0] + self.velocity[0], movement[1] + self.velocity[1])
 
-        # 🔥 STEP 2: X AXIS FIRST (Horizontal - No Jitter)
-        self.pos[0] += frame_movement[0] * 0.8  # Slower X
+        self.pos[0] += frame_movement[0]
         entity_rect = self.rect()
         for rect in Tilemap.physics_rects_around(self.pos):
             if entity_rect.colliderect(rect):
                 if frame_movement[0] > 0:
-                    self.pos[0] = rect.left - 16  # ← Exact 16px width snap
+                    entity_rect.right = rect.left
                     self.collisions['right'] = True
-                else:  # < 0
-                    self.pos[0] = rect.right  # ← Exact snap
+                if frame_movement[0] < 0:
+                    entity_rect.left = rect.right
                     self.collisions['left'] = True
+                self.pos[0] = entity_rect.x
 
-        # 🔥 Y AXIS SECOND (Vertical)
-        self.pos[1] += frame_movement[1] * 0.9  # Slower Y
+        # --- 2. Y AXIS MOVEMENT ---
+        self.pos[1] += frame_movement[1]
         entity_rect = self.rect()
         for rect in Tilemap.physics_rects_around(self.pos):
             if entity_rect.colliderect(rect):
                 if frame_movement[1] > 0:
-                    self.pos[1] = rect.top - 32  # ← Exact 32px height snap
+                    entity_rect.bottom = rect.top
                     self.collisions['down'] = True
-                else:  # < 0
-                    self.pos[1] = rect.bottom  # ← Exact snap
+                if frame_movement[1] < 0:
+                    entity_rect.top = rect.bottom
                     self.collisions['up'] = True
+                self.pos[1] = entity_rect.y
 
-        # 🔥 Your DEATH CHECK (keep as-is)
-        player_rect = self.rect()
-        for tile in Tilemap.tilemap.values():
-            if tile["type"] != "deadly": continue
-            tx, ty = tile["pos"]
-            deadly_rect = pygame.Rect(tx * Tilemap.tile_size, ty * Tilemap.tile_size,
-                                      Tilemap.tile_size, Tilemap.tile_size)
-            if player_rect.colliderect(deadly_rect):
-                self.pos = list(self.game.Tilemap.spawn_point)
-                self.velocity = [0, 0]
-                return
-
-        # 🔥 Your PLATFORM LOGIC (keep as-is)
+        # --- 3. PLATFORM LOGIC (One-way) ---
+        entity_rect = self.rect()
         for tile in Tilemap.tiles_around(self.pos):
-            if tile["type"] != "platform": continue
-            # ... your platform code stays exactly the same ...
+            if tile["type"] == "platform":
+                tx, ty = tile["pos"]
+                platform_rect = pygame.Rect(tx * Tilemap.tile_size, ty * Tilemap.tile_size, Tilemap.tile_size,
+                                            Tilemap.tile_size)
 
-        # 🔥 Gravity + Jumps (keep as-is)
+                if entity_rect.colliderect(platform_rect):
+                    # Check kung pababa ka at hindi naka-pindot ng Down key
+                    if self.velocity[1] > 0 and not self.drop_through:
+                        if entity_rect.bottom <= platform_rect.top + 10:
+                            entity_rect.bottom = platform_rect.top
+                            self.pos[1] = entity_rect.y
+                            self.collisions['down'] = True
+                            self.velocity[1] = 0
+
+        # --- 4. DEATH CHECK (Deadly Tiles) ---
+        entity_rect = self.rect()
+        for tile in Tilemap.tiles_around(self.pos):
+            if tile["type"] == "deadly":
+                tx, ty = tile["pos"]
+                deadly_rect = pygame.Rect(tx * Tilemap.tile_size, ty * Tilemap.tile_size, Tilemap.tile_size,
+                                          Tilemap.tile_size)
+                if entity_rect.colliderect(deadly_rect):
+                    # RESPAWN WITH OFFSET
+                    self.pos = [self.game.Tilemap.spawn_point[0], self.game.Tilemap.spawn_point[1] - 32]
+                    self.velocity = [0, 0]
+                    return  # Exit update immediately on death
+
+        # --- 5. GRAVITY & TERMINAL VELOCITY ---
         self.velocity[1] = min(5, self.velocity[1] + 0.1)
+
         if self.collisions['down']:
             self.velocity[1] = 0
             self.jumps = 0
         elif self.collisions['up']:
             self.velocity[1] = 0
 
+        # --- 6. MAP BOUNDS ---
         if map_bounds:
-            map_w, map_h = map_bounds
+            self.pos[0] = max(0, min(self.pos[0], map_bounds[0] - self.size[0]))
+            self.pos[1] = max(0, min(self.pos[1], map_bounds[1] - self.size[1]))
 
-            self.pos[0] = max(0, min(self.pos[0], map_w - self.size[0]))
-            self.pos[1] = max(0, min(self.pos[1], map_h - self.size[1]))
 
     def render(self, surf, offset=(0, 0)):
         img = self.game.assets['player']

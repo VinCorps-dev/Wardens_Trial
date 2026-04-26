@@ -209,9 +209,21 @@
  <tile id="181"/>
  <tile id="182"/>
  <tile id="183"/>
- <tile id="184"/>
- <tile id="185"/>
- <tile id="186"/>
+ <tile id="184">
+  <properties>
+   <property name="type" value="platform"/>
+  </properties>
+ </tile>
+ <tile id="185">
+  <properties>
+   <property name="type" value="platform"/>
+  </properties>
+ </tile>
+ <tile id="186">
+  <properties>
+   <property name="type" value="platform"/>
+  </properties>
+ </tile>
  <tile id="187"/>
  <tile id="188"/>
  <tile id="189"/>

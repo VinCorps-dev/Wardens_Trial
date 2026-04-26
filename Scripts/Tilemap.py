@@ -90,6 +90,12 @@ class Tilemap:
             if obj.name == "spawn":
                 self.spawn_point = (obj.x, obj.y)
 
+        self.goal_pos = (0, 0)  # Default
+        for obj in self.tmx_data.objects:
+            if obj.name == "goal":
+                self.goal_pos = (obj.x, obj.y)
+                break
+
 
     def deadly_rects_around(self, position):
         rects = []
