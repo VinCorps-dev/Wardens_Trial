@@ -76,6 +76,7 @@ class PhysicsEntity:
                 deadly_rect = pygame.Rect(tx * Tilemap.tile_size, ty * Tilemap.tile_size, Tilemap.tile_size,
                                           Tilemap.tile_size)
                 if entity_rect.colliderect(deadly_rect):
+                    self.game.audio.play_sfx("Assets/Music/SFX/Death Sound.mp3", 0.4)
                     # RESPAWN WITH OFFSET
                     self.pos = [self.game.Tilemap.spawn_point[0], self.game.Tilemap.spawn_point[1] - 32]
                     self.velocity = [0, 0]

@@ -88,6 +88,8 @@ class Game:
                         if self.player.jumps < self.player.max_jumps:
                             self.player.velocity[1] = -3
                             self.player.jumps += 1
+                            self.audio.play_sfx("Assets/Music/SFX/Jump.wav", 0.3)
+
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT:
                         self.movement[0] = False
