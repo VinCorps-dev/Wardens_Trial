@@ -36,6 +36,6 @@ def load_character_animations(e_type, base_path):
         if os.path.exists(BASE_IMG_PATH + full_path):
             dict_key = e_type + '/' + action
                 # Make sure this says 'Animation' with a capital A
-            animations[dict_key] = Animation(load_images(full_path), img_dur=3)
+            animations[dict_key] = Animation(load_images(full_path), img_dur=7)
 
     return animations
