@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="left-up" width="150" height="18" tilewidth="16" tileheight="16" infinite="0" nextlayerid="9" nextobjectid="4">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="left-up" width="150" height="18" tilewidth="16" tileheight="16" infinite="0" nextlayerid="9" nextobjectid="7">
  <tileset firstgid="1" source="../Assets/Tilesets/Tiles.tsx"/>
  <layer id="2" name="Background" width="150" height="18">
   <data encoding="csv">
@@ -89,8 +89,8 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
- <objectgroup id="8" name="End goal" offsetx="-7" offsety="-22">
-  <object id="3" name="goal" x="2360" y="133" width="16" height="32"/>
+ <objectgroup id="8" name="End goal" offsetx="-4" offsety="-22">
+  <object id="3" name="goal" x="2318" y="136" width="32" height="32"/>
  </objectgroup>
  <objectgroup id="6" name="spawn" offsetx="5" offsety="-19">
   <object id="2" name="spawn" x="30" y="175" width="16" height="32"/>

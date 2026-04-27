@@ -57,6 +57,7 @@ class Tilemap:
                         )
 
 
+
     def load_tmx(self, filename):
         self.tmx_data = pytmx.load_pygame(filename)
         tmx_data = self.tmx_data

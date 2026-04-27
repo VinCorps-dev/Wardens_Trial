@@ -1,24 +1,37 @@
 import pygame
 
+
 class PhysicsEntity:
     def __init__(self, game, e_type, pos, size):
         self.game = game
-        self.e_type = e_type
+        self.e_type = e_type  # e.g., 'player'
         self.pos = list(pos)
         self.size = size
         self.velocity = [0, 0]
-        self.collisions = { 'up': False, 'down': False, 'left': False, 'right': False }
+
+        self.action = ''
+        self.anim_offset = (-3, -3)
+        self.flip = False
+
+        # CHANGED: Just ask for 'run'.
+        # Combined with e_type ('player'), it will look for 'player/run'
+        self.set_action('run')
+
+        self.collisions = {'up': False, 'down': False, 'left': False, 'right': False}
         self.jumps = 0
         self.max_jumps = 2
         self.drop_through = False
 
+
+
+    def set_action(self, action):
+        if action != self.action:
+            self.action = action
+            # This looks up 'player/run' in your assets and makes a fresh copy for this player
+            self.animation = self.game.assets[self.e_type + '/' + self.action].copy()
+
     def rect(self):
-        return pygame.Rect(
-            int(self.pos[0]),  # 🔥 Integer X
-            int(self.pos[1]),  # 🔥 Integer Y
-            16,  # 🔥 Your width
-            32  # 🔥 Your height
-        )
+        return pygame.Rect(int(self.pos[0]), int(self.pos[1]), self.size[0], self.size[1])
 
     def update(self, Tilemap, movement=(0, 0), map_bounds=None):
         self.collisions = {'up': False, 'down': False, 'left': False, 'right': False}
@@ -82,6 +95,21 @@ class PhysicsEntity:
                     self.velocity = [0, 0]
                     return  # Exit update immediately on death
 
+        if movement[0] != 0:
+            # We are moving! Update the flip and play the animation
+            if movement[0] > 0:
+                self.flip = False
+            elif movement[0] < 0:
+                self.flip = True
+
+            # This makes the legs move
+            self.animation.update()
+        else:
+            # 2. If we AREN'T moving, reset to the first frame
+            # so the character stands still.
+            self.animation.frame = 0
+
+
         # --- 5. GRAVITY & TERMINAL VELOCITY ---
         self.velocity[1] = min(5, self.velocity[1] + 0.1)
 
@@ -96,13 +124,19 @@ class PhysicsEntity:
             self.pos[0] = max(0, min(self.pos[0], map_bounds[0] - self.size[0]))
             self.pos[1] = max(0, min(self.pos[1], map_bounds[1] - self.size[1]))
 
-
     def render(self, surf, offset=(0, 0)):
-        img = self.game.assets['player']
+        # 1. Get the current frame
+        img = self.animation.img()
 
-        rect = img.get_rect(midbottom=(
-            self.pos[0] + self.size[0] / 2 - offset[0],
-            self.pos[1] + self.size[1] - offset[1]
+        # 2. Handle the flip
+        img_to_draw = pygame.transform.flip(img, self.flip, False)
+
+        # 3. Use 'midbottom' alignment
+        # We align the middle-bottom of the IMAGE to the middle-bottom of the HITBOX
+        rect = img_to_draw.get_rect(midbottom=(
+            self.pos[0] + self.size[0] // 2 - offset[0], # Center of hitbox X
+            self.pos[1] + self.size[1] - offset[1]      # Bottom of hitbox Y
         ))
 
-        surf.blit(img, rect)
+        # 4. Draw the rect
+        surf.blit(img_to_draw, rect)

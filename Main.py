@@ -2,12 +2,14 @@ import math
 import pygame
 import sys
 
+
 from Scripts.Entities import PhysicsEntity
 from Scripts.Utilities import load_image, load_images
 from Scripts.Tilemap import Tilemap
 from Scripts.Utilities import load_spritesheet
 from Scripts.Audio import Audio
 from Scripts.Ui_sa_game import UserInterface
+from Scripts.Animation import Animation, load_character_animations
 
 class Game:
     def __init__(self):
@@ -23,8 +25,10 @@ class Game:
 
         self.assets ={
             'tiles': load_spritesheet('Tilesets/Dungeon Tile Set.png', 16),
-            'player': load_image('Character/sprite.png')
+            'goal': load_image('gems/atlas_gem.png'),
         }
+
+        self.assets.update(load_character_animations('player', 'Character/Peitarchia'))
 
         self.Tilemap = Tilemap(self, tile_size= 16)
 
@@ -59,6 +63,11 @@ class Game:
 
             # 3. Now you use 'render_scroll' for BOTH of these
             self.Tilemap.render(self.display, offset=render_scroll)
+            goal_rect = self.assets['goal'].get_rect(midbottom=(
+                self.Tilemap.goal_pos[0] + self.Tilemap.tile_size / 2 - render_scroll[0],
+                self.Tilemap.goal_pos[1] - render_scroll[1]
+            ))
+            self.display.blit(self.assets['goal'], goal_rect)
 
             map_w = self.Tilemap.tmx_data.width * self.Tilemap.tile_size
             map_h = self.Tilemap.tmx_data.height * self.Tilemap.tile_size
