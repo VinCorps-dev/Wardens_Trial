@@ -4,15 +4,13 @@ import sys
 
 from Scripts.Menus import MenuManager
 from Scripts.Entities import PhysicsEntity
-from Scripts.Utilities import load_image, load_images
+from Scripts.Utilities import load_image, load_images, load_spritesheet
 from Scripts.Tilemap import Tilemap
-from Scripts.Utilities import load_spritesheet
 from Scripts.Audio import Audio
 from Scripts.Ui_sa_game import UserInterface
 from Scripts.Animation import Animation, load_character_animations
-from Scripts.LevelManager import LevelManager # Add this import
+from Scripts.LevelManager import LevelManager
 from Scripts.LevelSelector import LevelSelector
-
 
 
 class Game:
@@ -21,17 +19,16 @@ class Game:
         pygame.display.set_caption("Warden's Trial")
         self.screen = pygame.display.set_mode((640, 480))
         self.display = pygame.Surface((320, 240))
-        self.ui = UserInterface(self)
 
-        # Sa Game.__init__
-        self.menu_manager = MenuManager(self)
+        # 1. INITIALIZE BASIC SYSTEMS
+        self.clock = pygame.time.Clock()
+        self.audio = Audio()
+        self.movement = [False, False]
+        self.scroll = [0, 0]
         self.state = "main_menu"
 
-        self.clock = pygame.time.Clock()
-
-        self.movement = [False,False]
-
-        self.assets ={
+        # 2. LOAD STATIC ASSETS
+        self.assets = {
             'tiles': load_spritesheet('Tilesets/Dungeon Tile Set.png', 16),
             'goal': load_image('gems/atlas_gem.png'),
             'back_btn': load_image('Menu Buttons/Large Buttons/Large Buttons/Back Button.png'),
@@ -41,86 +38,77 @@ class Game:
             'btn_lvl2': load_image('Menu Buttons/Level buttons/Level 2.png'),
             'btn_lvl3': load_image('Menu Buttons/Level buttons/Level 3.png'),
             'btn_lvl4': load_image('Menu Buttons/Level buttons/Level 4.png'),
-            'btn_locked':load_image('Menu Buttons/Level buttons/Locked.png'),
+            'btn_locked': load_image('Menu Buttons/Level buttons/Locked.png'),
             'gem1': load_image('gems/atlas_gem.png'),
             'gem2': load_image('gems/makrothumia_gem.png'),
             'gem3': load_image('gems/peitharchia_gem.png'),
             'gem4': load_image('gems/makrothumia_gem.png'),
         }
 
-        self.assets.update(load_character_animations('player', 'Character/Makrothumia'))
-
-        self.Tilemap = Tilemap(self, tile_size= 16)
-
-        # Create the manager and give it access to the game
+        # 3. INITIALIZE MANAGERS
+        self.Tilemap = Tilemap(self, tile_size=16)
         self.level_manager = LevelManager(self)
         self.level_selector = LevelSelector(self)
+        self.menu_manager = MenuManager(self)
+        self.ui = UserInterface(self)
 
-        # ✅ THEN GET SPAWN
-        spawn = (self.Tilemap.spawn_point[0], self.Tilemap.spawn_point[1] - 32)  # Offset for height
-        self.player = PhysicsEntity(self, 'player', spawn, (16, 32))
+        # 4. LOAD INITIAL LEVEL & CHARACTER
+        self.level_manager.load_level(1)
 
-        self.scroll = [0, 0]
+        # 5. CREATE PLAYER
+        spawn_pos = (self.Tilemap.spawn_point[0], self.Tilemap.spawn_point[1] - 32)
+        self.player = PhysicsEntity(self, 'player', spawn_pos, (16, 32))
+        self.player.set_action('walk')
 
-        self.scroll = [0, 0]
+        # 6. FORCE INITIAL STATE
+        self.state = "main_menu"
 
-        self.audio = Audio()
-
-        # DITO MO ILAGAY ANG STEP 2 ✅
     def start_level(self, level_id):
+        # Reset movement keys when starting a new level
+        self.movement = [False, False]
         self.level_manager.load_level(level_id)
 
     def run(self):
         while True:
-            # 1. Timing at Events
             dt = self.clock.tick(60) / 1000.0
             events = pygame.event.get()
 
+            # Global Event Handling
             for event in events:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
 
-                # Ipasa ang events sa UI (Pause button) habang naglalaro
+                # UI Interaction (Pause Button during gameplay)
                 if self.state == "playing":
-                    self.ui.process_events(event)
+                    ui_action = self.ui.process_events(event)
+                    if ui_action == "pause_clicked":
+                        self.state = "paused"
+                        pygame.mixer.music.pause()
+                        self.menu_manager.pause_menu.enable()
 
-            # ---------------------------------------------------------
+            # --- STATE MACHINE LOGIC ---
+
             # CASE A: MAIN MENU
-            # ---------------------------------------------------------
             if self.state == "main_menu":
                 self.screen.fill((0, 0, 0))
-                try:
+                if self.menu_manager.main_menu.is_enabled():
+                    self.menu_manager.main_menu.update(events)
                     if self.menu_manager.main_menu.is_enabled():
-                        self.menu_manager.main_menu.update(events)
                         self.menu_manager.main_menu.draw(self.screen)
-                    else:
-                        self.menu_manager.main_menu.enable()
-                except RuntimeError:
-                    pass
+                else:
+                    self.menu_manager.main_menu.enable()
 
+            # CASE B: LEVEL SELECT
             elif self.state == "level_select":
                 self.level_selector.update(events)
 
-            # ---------------------------------------------------------
-            # CASE B: NAGLALARO (Fixed Indentation & Music)
-            # ---------------------------------------------------------
+            # CASE C: PLAYING
             elif self.state == "playing":
-                # Audio logic (Isang beses lang tatawagin)
                 if not pygame.mixer.music.get_busy():
                     self.audio.play_music("Assets/Music/Background Music.mp3", 0.4)
 
-                # Game Logic (Movement, Scroll, Update)
-                self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 30
-                self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 30
-
-                map_w = self.Tilemap.tmx_data.width * self.Tilemap.tile_size
-                map_h = self.Tilemap.tmx_data.height * self.Tilemap.tile_size
-                self.scroll[0] = max(0, min(self.scroll[0], map_w - self.display.get_width()))
-                self.scroll[1] = max(0, min(self.scroll[1], map_h - self.display.get_height()))
-                render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
-
-                # Input Handling (Hiwalay sa Rendering)
+                # Gameplay Input Handling
                 for event in events:
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_LEFT: self.movement[0] = True
@@ -141,42 +129,69 @@ class Game:
                         if event.key == pygame.K_RIGHT: self.movement[1] = False
                         if event.key == pygame.K_DOWN: self.player.drop_through = False
 
-                # Rendering (Dapat NAKALABAS ito sa for event loop)
+                # Camera Follow Logic
+                self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 30
+                self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 30
+
+                map_w = self.Tilemap.tmx_data.width * self.Tilemap.tile_size
+                map_h = self.Tilemap.tmx_data.height * self.Tilemap.tile_size
+                self.scroll[0] = max(0, min(self.scroll[0], map_w - self.display.get_width()))
+                self.scroll[1] = max(0, min(self.scroll[1], map_h - self.display.get_height()))
+                render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
+
+                # Update Player
+                self.player.update(self.Tilemap, (self.movement[1] - self.movement[0], 0), (map_w, map_h))
+
+                # Rendering
                 self.display.fill((0, 0, 0))
                 self.Tilemap.render(self.display, offset=render_scroll)
 
-                goal_rect = self.assets['goal'].get_rect(midbottom=(
+                # Goal Gem Rendering
+                current_lvl = self.level_manager.current_level
+                gem_key = f'gem{current_lvl}'
+
+                # Kunin ang tamang image sa assets, fallback sa 'goal' kung wala
+                current_gem_img = self.assets.get(gem_key, self.assets['goal'])
+
+                # I-calculate ang posisyon sa screen
+                goal_rect = current_gem_img.get_rect(midbottom=(
                     self.Tilemap.goal_pos[0] + self.Tilemap.tile_size / 2 - render_scroll[0],
                     self.Tilemap.goal_pos[1] - render_scroll[1]
                 ))
-                self.display.blit(self.assets['goal'], goal_rect)
 
-                self.player.update(self.Tilemap, (self.movement[1] - self.movement[0], 0), (map_w, map_h))
+                # I-blit ang tamang gem image
+                self.display.blit(current_gem_img, goal_rect)
+
                 self.player.render(self.display, offset=render_scroll)
 
-                # Scaling to Main Screen
+                # Final Scaling and UI
                 self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
                 self.ui.update(dt)
                 self.ui.draw(self.screen)
 
-            # ---------------------------------------------------------
-            # CASE C: PAUSED
-            # ---------------------------------------------------------
+            # CASE D: PAUSED
             elif self.state == "paused":
-                # Draw the last frame of the game
                 self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
                 self.ui.draw(self.screen)
-
-                try:
+                if self.menu_manager.pause_menu.is_enabled():
+                    self.menu_manager.pause_menu.update(events)
                     if self.menu_manager.pause_menu.is_enabled():
-                        self.menu_manager.pause_menu.update(events)
                         self.menu_manager.pause_menu.draw(self.screen)
-                    else:
-                        self.menu_manager.pause_menu.enable()
-                except RuntimeError:
-                    pass
+                else:
+                    self.menu_manager.pause_menu.enable()
 
-            # ISA LANG DAPAT ANG UPDATE SA PINAKABABA
+            # CASE E: LEVEL COMPLETE
+            elif self.state == "level_complete":
+                self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
+                if self.menu_manager.complete_menu.is_enabled():
+                    self.menu_manager.complete_menu.update(events)
+                    if self.menu_manager.complete_menu.is_enabled():
+                        self.menu_manager.complete_menu.draw(self.screen)
+                else:
+                    self.menu_manager.complete_menu.enable()
+
             pygame.display.update()
 
-Game().run()
+
+if __name__ == "__main__":
+    Game().run()

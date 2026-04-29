@@ -84,8 +84,31 @@ class MenuManager:
         self.pause_menu.add.vertical_margin(10)
         self.pause_menu.add.button('BACK TO TITLE', self.back_to_title)
 
+        # Level Complete
+
+        self.complete_theme = self.my_theme.copy()
+        self.complete_theme.background_color = (0, 0, 0, 180)  # Semi-transparent black/greenish
+
+        self.complete_menu = pygame_menu.Menu(
+            title="", width=640, height=480,
+            theme=self.complete_theme,
+            center_content=True  # Pwede itong True para nasa gitna talaga yung Victory message
+        )
+
+        self.complete_menu.add.label("LEVEL COMPLETE", font_size=40, font_color=(255, 215, 0))
+        self.complete_menu.add.vertical_margin(40)
+
+        # Idagdag ang buttons
+        self.complete_menu.add.button('LEVEL SELECT', self.back_to_select)
+        self.complete_menu.add.button('BACK TO TITLE', self.back_to_title)
+        self.complete_menu.disable()
+
     # --- FUNCTIONS PARA SA BUTTONS ---
 
+    def back_to_select(self):
+        self.game.state = "level_select"
+        self.complete_menu.disable()
+        pygame.mixer.music.pause()
     def start_game(self):
         # Palitan ang "playing" ng "level_select"
         self.game.state = "level_select"

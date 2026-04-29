@@ -15,24 +15,35 @@ class Tilemap:
 
     def tiles_around(self, position):
         tiles = []
-        # 🔥 Bigger check area for tall player
+        # Kunin ang saktong tile coordinate ng player
         tile_x = int(position[0] // self.tile_size)
         tile_y = int(position[1] // self.tile_size)
 
-        # Check MORE tiles for tall collision box
-        for dx in range(-2, 3):  # Wider X range
-            for dy in range(-3, 4):  # Taller Y range (32px player)
+        # Imbes na range(-3, 4), gagamit tayo ng saktong 3x3 o 3x4 grid
+        # para hindi masyadong malayo ang chine-check na tiles.
+        for dx in range(-1, 2):  # Check left, center, right
+            for dy in range(-1, 3):  # Check head, torso, feet, and floor
                 check_x, check_y = tile_x + dx, tile_y + dy
                 check_location = f"{check_x};{check_y}"
                 if check_location in self.tilemap:
                     tiles.append(self.tilemap[check_location])
         return tiles
 
+        # --- ILAGAY MO DITO SA BABA NG PHYSICS_RECTS O KAHIT SAANG DEF ---
+    def get_goal_rect(self):
+        return pygame.Rect(self.goal_pos[0], self.goal_pos[1], self.tile_size, self.tile_size)
+
     def physics_rects_around(self, position):
         rects = []
         for tile in self.tiles_around(position):
-            if tile['type'] in PHYSICS_TILES:
-                rects.append(pygame.Rect(tile['pos'][0] * self.tile_size, tile['pos'][1] * self.tile_size, self.tile_size, self.tile_size))
+            # Siguraduhin na ang PHYSICS_TILES ay 'tiles' (base sa setup mo)
+            if tile['type'] in PHYSICS_TILES or tile['type'] == 'solid':
+                rects.append(pygame.Rect(
+                    tile['pos'][0] * self.tile_size,
+                    tile['pos'][1] * self.tile_size,
+                    self.tile_size,
+                    self.tile_size
+                ))
         return rects
 
 

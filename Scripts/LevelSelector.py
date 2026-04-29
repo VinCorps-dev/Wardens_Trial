@@ -5,7 +5,12 @@ class LevelSelector:
     def __init__(self, game):
         self.game = game
         self.font = pygame.font.SysFont(None, 24)
-        self.level_titles = ["The Gate", "Iron Cells", "Dark Hall", "Warden's Room"]
+        self.level_titles = [
+            "Trial of Patience",
+            "Trial of Discipline",
+            "Trial of Endurance",
+            "Warden's Room"
+        ]
 
         # Eksaktong sukat at pwesto ng panels
         self.panels = [

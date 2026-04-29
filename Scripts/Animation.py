@@ -3,6 +3,7 @@ import os
 import pygame
 from Scripts.Utilities import load_images, BASE_IMG_PATH
 
+
 class Animation:
     def __init__(self, images, img_dur=5, loop=True):
         self.images = images
@@ -15,27 +16,31 @@ class Animation:
         return Animation(self.images, self.img_duration, self.loop)
 
     def update(self):
+        self.frame += 1
+            # Full cycle calculation para sa 16 frames
+        full_cycle = self.img_duration * len(self.images)
+
         if self.loop:
-            # Cycle through frames: 17 frames * duration per frame
-            self.frame = (self.frame + 1) % (self.img_duration * len(self.images))
+                # Ito ang saktong modulo para hindi mag-skip ng frames
+                self.frame %= full_cycle
         else:
-            self.frame = min(self.frame + 1, self.img_duration * len(self.images) - 1)
-            if self.frame >= self.img_duration * len(self.images) - 1:
-                self.done = True
+            if self.frame >= full_cycle - 1:
+                 self.frame = full_cycle - 1
+                 self.done = True
 
     def img(self):
-        # Calculate which image index to show right now
-        return self.images[int(self.frame / self.img_duration)]
+            # Siguraduhin na integer ang index at hindi lalampas sa list size
+        img_index = int(self.frame / self.img_duration)
+        return self.images[img_index % len(self.images)]
 
 def load_character_animations(e_type, base_path):
     animations = {}
-    actions = ['run']
-
+    actions = ['walk', 'jump', 'drop']
     for action in actions:
         full_path = base_path + '/' + action
         if os.path.exists(BASE_IMG_PATH + full_path):
             dict_key = e_type + '/' + action
-                # Make sure this says 'Animation' with a capital A
-            animations[dict_key] = Animation(load_images(full_path), img_dur=7)
-
+                # 16 frames need a faster duration (3 or 4) to look smooth at 60fps
+            dur = 4 if action == 'walk' else 7
+            animations[dict_key] = Animation(load_images(full_path), img_dur=dur)
     return animations

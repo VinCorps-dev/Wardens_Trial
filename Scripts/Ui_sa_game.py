@@ -1,13 +1,18 @@
 import pygame
 import pygame_gui
 
-
 class UserInterface:
     def __init__(self, game):
         self.game = game
         self.manager = pygame_gui.UIManager(self.game.screen.get_size())
 
-        # 1. Container para sa Progress Bar (Top-Left)
+        # 1. LOAD AND SCALE THE ICON
+        # Nilagay natin sa 'self' para ma-access sa draw method mamaya
+        raw_icon = pygame.image.load(
+            'Assets/Menu Buttons/Square Buttons/Square Buttons/Pause Square Button.png').convert_alpha()
+        self.pause_icon = pygame.transform.scale(raw_icon, (40, 40))
+
+        # 2. CONTAINER PARA SA PROGRESS BAR (Top-Left)
         self.container = pygame_gui.elements.UIPanel(
             relative_rect=pygame.Rect((10, 10), (220, 60)),
             manager=self.manager,
@@ -27,17 +32,17 @@ class UserInterface:
             container=self.container
         )
 
-        # 2. PAUSE BUTTON (Top-Right)
-        # Gagamit tayo ng anchor para laging nasa gilid kahit mag-resize ang window
+        # 3. PAUSE BUTTON (Top-Right)
+        # Gagamit tayo ng UIButton para gumana pa rin ang UI_BUTTON_PRESSED event
         self.pause_button = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((-60, 10), (50, 50)),  # -60 means 60 pixels mula sa kanan
-            text='||',
+            relative_rect=pygame.Rect((-60, 10), (50, 50)),
+            text='',
             manager=self.manager,
-            anchors={'right': 'right', 'top': 'top'}  # I-anchor sa top-right
+            anchors={'right': 'right', 'top': 'top'}
         )
 
     def update(self, dt):
-        # Progress logic mo (Working na ito base sa code mo)
+        # Progress logic (Working base sa code mo)
         start_x = self.game.Tilemap.spawn_point[0]
         end_x = self.game.Tilemap.goal_pos[0]
         total_dist = end_x - start_x
@@ -50,18 +55,24 @@ class UserInterface:
 
         self.progress_bar.percent_full = progress
 
-        # Mahalaga: I-update ang manager
+        # Update ang manager
         self.manager.update(dt)
 
     def draw(self, surf):
+        # I-draw muna ang lahat ng UI elements ng manager
         self.manager.draw_ui(surf)
 
-    # 3. Method para i-handle ang events ng UI
+        # 4. MANUAL BLIT NG ICON (THE HOVER FIX)
+        # Kunin ang pwesto ng button at i-center ang icon sa loob nito (5px margin)
+        button_rect = self.pause_button.get_abs_rect()
+        icon_pos = (button_rect.x + 5, button_rect.y + 5)
+        surf.blit(self.pause_icon, icon_pos)
+
     def process_events(self, event):
         self.manager.process_events(event)
 
         # Check kung na-click ang pause button
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
             if event.ui_element == self.pause_button:
-                return "pause_clicked"  # I-return ito sa main loop
+                return "pause_clicked"
         return None

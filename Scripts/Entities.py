@@ -4,7 +4,7 @@ import pygame
 class PhysicsEntity:
     def __init__(self, game, e_type, pos, size):
         self.game = game
-        self.e_type = e_type  # e.g., 'player'
+        self.e_type = e_type  # 'player'
         self.pos = list(pos)
         self.size = size
         self.velocity = [0, 0]
@@ -13,24 +13,19 @@ class PhysicsEntity:
         self.anim_offset = (-3, -3)
         self.flip = False
 
-        # CHANGED: Just ask for 'run'.
-        # Combined with e_type ('player'), it will look for 'player/run'
-        self.set_action('run')
+        self.set_action('walk')
 
         self.collisions = {'up': False, 'down': False, 'left': False, 'right': False}
         self.jumps = 0
         self.max_jumps = 2
         self.drop_through = False
 
-
-
     def set_action(self, action):
         if action != self.action:
             self.action = action
-            # This looks up 'player/run' in your assets and makes a fresh copy for this player
+            # Gumagawa ng kopya ng animation mula sa assets ng game
             self.animation = self.game.assets[self.e_type + '/' + self.action].copy()
-
-
+            self.animation.frame = 0
 
     def rect(self):
         return pygame.Rect(int(self.pos[0]), int(self.pos[1]), self.size[0], self.size[1])
@@ -38,8 +33,12 @@ class PhysicsEntity:
     def update(self, Tilemap, movement=(0, 0), map_bounds=None):
         self.collisions = {'up': False, 'down': False, 'left': False, 'right': False}
 
-        # --- 1. X AXIS MOVEMENT ---
-        frame_movement = (movement[0] + self.velocity[0], movement[1] + self.velocity[1])
+        # 1. APPLY GRAVITY FIRST
+        self.velocity[1] = min(5, self.velocity[1] + 0.1)  # Lighter gravity
+
+        # 2. X-AXIS MOVEMENT & COLLISION
+        # Kunin ang total move sa X (input + knockback/velocity)
+        frame_movement = [movement[0] + self.velocity[0], self.velocity[1]]
 
         self.pos[0] += frame_movement[0]
         entity_rect = self.rect()
@@ -53,7 +52,7 @@ class PhysicsEntity:
                     self.collisions['left'] = True
                 self.pos[0] = entity_rect.x
 
-        # --- 2. Y AXIS MOVEMENT ---
+        # 3. Y-AXIS MOVEMENT & COLLISION
         self.pos[1] += frame_movement[1]
         entity_rect = self.rect()
         for rect in Tilemap.physics_rects_around(self.pos):
@@ -61,18 +60,20 @@ class PhysicsEntity:
                 if frame_movement[1] > 0:
                     entity_rect.bottom = rect.top
                     self.collisions['down'] = True
+                    self.velocity[1] = 0
+                    self.jumps = 0
                 if frame_movement[1] < 0:
                     entity_rect.top = rect.bottom
                     self.collisions['up'] = True
+                    self.velocity[1] = 0
                 self.pos[1] = entity_rect.y
 
-        # --- 3. PLATFORM LOGIC ---
+        # --- 4. PLATFORM LOGIC (One-way) ---
         entity_rect = self.rect()
         for tile in Tilemap.tiles_around(self.pos):
             if tile["type"] == "platform":
-                tx, ty = tile["pos"]
-                platform_rect = pygame.Rect(tx * Tilemap.tile_size, ty * Tilemap.tile_size, Tilemap.tile_size,
-                                            Tilemap.tile_size)
+                platform_rect = pygame.Rect(tile["pos"][0] * Tilemap.tile_size, tile["pos"][1] * Tilemap.tile_size,
+                                            Tilemap.tile_size, Tilemap.tile_size)
                 if entity_rect.colliderect(platform_rect):
                     if self.velocity[1] > 0 and not self.drop_through:
                         if entity_rect.bottom <= platform_rect.top + 10:
@@ -80,65 +81,62 @@ class PhysicsEntity:
                             self.pos[1] = entity_rect.y
                             self.collisions['down'] = True
                             self.velocity[1] = 0
+                            self.jumps = 0
 
-        # --- 4. DEATH CHECK ---
-        entity_rect = self.rect()
-        for tile in Tilemap.tiles_around(self.pos):
-            if tile["type"] == "deadly":
-                tx, ty = tile["pos"]
-                deadly_rect = pygame.Rect(tx * Tilemap.tile_size, ty * Tilemap.tile_size, Tilemap.tile_size,
-                                          Tilemap.tile_size)
-                if entity_rect.colliderect(deadly_rect):
-                    self.game.audio.play_sfx("Assets/Music/SFX/Death Sound.mp3", 0.4)
-                    self.pos = [self.game.Tilemap.spawn_point[0], self.game.Tilemap.spawn_point[1] - 32]
-                    self.velocity = [0, 0]
-                    return
+        # --- 5. ANIMATION LOGIC (Anti-Jitter) ---
+        if self.collisions['down']:
+            if abs(movement[0]) > 0.1:
+                self.set_action('walk')
+                self.animation.update()
+            else:
+                # Idle state (First frame of walk)
+                self.set_action('walk')
+                self.animation.frame = 0
+        else:
+            # Airborne: Buffer added to avoid flickering
+            if self.velocity[1] < 0:
+                self.set_action('jump')
+            elif self.velocity[1] > 0.7:  # Threshold para hindi mag-jitter sa maliliit na bumps
+                self.set_action('drop')
 
-                    # --- 4.5 WIN CHECK (Goal Detection) ---
-        # Gumawa ng hitbox para sa goal gamit ang posisyon mula sa Tilemap
+            self.animation.update()
+
+        # 6. FLIP HANDLING
+        if movement[0] > 0:
+            self.flip = False
+        elif movement[0] < 0:
+            self.flip = True
+
+        # --- 7. EXTRA CHECKS (Win/Death/Bounds) ---
+        # Goal check
         goal_hitbox = pygame.Rect(Tilemap.goal_pos[0], Tilemap.goal_pos[1], Tilemap.tile_size, Tilemap.tile_size)
-
-        # 'entity_rect' ang gamit natin dito para match sa taas
         if entity_rect.colliderect(goal_hitbox):
             self.game.level_manager.unlock_next_level()
-            self.velocity = [0, 0]
-            self.game.state = "level_select"
+            self.game.state = "level_complete"
             pygame.mixer.music.pause()
             return
 
-        # --- 5. ANIMATION & GRAVITY ---
-        if movement[0] != 0:
-            self.flip = (movement[0] < 0)
-            self.animation.update()
-        else:
-            self.animation.frame = 0
+        # Death check
+        for tile in Tilemap.tiles_around(self.pos):
+            if tile["type"] == "deadly":
+                d_rect = pygame.Rect(tile["pos"][0] * 16, tile["pos"][1] * 16, 16, 16)
+                if entity_rect.colliderect(d_rect):
+                    self.game.audio.play_sfx("Assets/Music/SFX/Death Sound.mp3", 0.4)
+                    self.pos = [self.game.Tilemap.spawn_point[0], self.game.Tilemap.spawn_point[1] - 32]
+                    self.velocity = [0, 0]
 
-        self.velocity[1] = min(5, self.velocity[1] + 0.1)
-
-        if self.collisions['down']:
-            self.velocity[1] = 0
-            self.jumps = 0
-        elif self.collisions['up']:
-            self.velocity[1] = 0
-
-        # --- 6. MAP BOUNDS ---
         if map_bounds:
             self.pos[0] = max(0, min(self.pos[0], map_bounds[0] - self.size[0]))
             self.pos[1] = max(0, min(self.pos[1], map_bounds[1] - self.size[1]))
 
     def render(self, surf, offset=(0, 0)):
-        # 1. Get the current frame
         img = self.animation.img()
-
-        # 2. Handle the flip
         img_to_draw = pygame.transform.flip(img, self.flip, False)
 
-        # 3. Use 'midbottom' alignment
-        # We align the middle-bottom of the IMAGE to the middle-bottom of the HITBOX
+        # Mid-bottom alignment para laging nakatapak sa lupa ang sprite
         rect = img_to_draw.get_rect(midbottom=(
-            self.pos[0] + self.size[0] // 2 - offset[0], # Center of hitbox X
-            self.pos[1] + self.size[1] - offset[1]      # Bottom of hitbox Y
+            self.pos[0] + self.size[0] // 2 - offset[0],
+            self.pos[1] + self.size[1] - offset[1]
         ))
 
-        # 4. Draw the rect
         surf.blit(img_to_draw, rect)
