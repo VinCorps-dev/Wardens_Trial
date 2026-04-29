@@ -30,6 +30,8 @@ class PhysicsEntity:
             # This looks up 'player/run' in your assets and makes a fresh copy for this player
             self.animation = self.game.assets[self.e_type + '/' + self.action].copy()
 
+
+
     def rect(self):
         return pygame.Rect(int(self.pos[0]), int(self.pos[1]), self.size[0], self.size[1])
 
@@ -64,16 +66,14 @@ class PhysicsEntity:
                     self.collisions['up'] = True
                 self.pos[1] = entity_rect.y
 
-        # --- 3. PLATFORM LOGIC (One-way) ---
+        # --- 3. PLATFORM LOGIC ---
         entity_rect = self.rect()
         for tile in Tilemap.tiles_around(self.pos):
             if tile["type"] == "platform":
                 tx, ty = tile["pos"]
                 platform_rect = pygame.Rect(tx * Tilemap.tile_size, ty * Tilemap.tile_size, Tilemap.tile_size,
                                             Tilemap.tile_size)
-
                 if entity_rect.colliderect(platform_rect):
-                    # Check kung pababa ka at hindi naka-pindot ng Down key
                     if self.velocity[1] > 0 and not self.drop_through:
                         if entity_rect.bottom <= platform_rect.top + 10:
                             entity_rect.bottom = platform_rect.top
@@ -81,7 +81,7 @@ class PhysicsEntity:
                             self.collisions['down'] = True
                             self.velocity[1] = 0
 
-        # --- 4. DEATH CHECK (Deadly Tiles) ---
+        # --- 4. DEATH CHECK ---
         entity_rect = self.rect()
         for tile in Tilemap.tiles_around(self.pos):
             if tile["type"] == "deadly":
@@ -90,27 +90,29 @@ class PhysicsEntity:
                                           Tilemap.tile_size)
                 if entity_rect.colliderect(deadly_rect):
                     self.game.audio.play_sfx("Assets/Music/SFX/Death Sound.mp3", 0.4)
-                    # RESPAWN WITH OFFSET
                     self.pos = [self.game.Tilemap.spawn_point[0], self.game.Tilemap.spawn_point[1] - 32]
                     self.velocity = [0, 0]
-                    return  # Exit update immediately on death
+                    return
 
+                    # --- 4.5 WIN CHECK (Goal Detection) ---
+        # Gumawa ng hitbox para sa goal gamit ang posisyon mula sa Tilemap
+        goal_hitbox = pygame.Rect(Tilemap.goal_pos[0], Tilemap.goal_pos[1], Tilemap.tile_size, Tilemap.tile_size)
+
+        # 'entity_rect' ang gamit natin dito para match sa taas
+        if entity_rect.colliderect(goal_hitbox):
+            self.game.level_manager.unlock_next_level()
+            self.velocity = [0, 0]
+            self.game.state = "level_select"
+            pygame.mixer.music.pause()
+            return
+
+        # --- 5. ANIMATION & GRAVITY ---
         if movement[0] != 0:
-            # We are moving! Update the flip and play the animation
-            if movement[0] > 0:
-                self.flip = False
-            elif movement[0] < 0:
-                self.flip = True
-
-            # This makes the legs move
+            self.flip = (movement[0] < 0)
             self.animation.update()
         else:
-            # 2. If we AREN'T moving, reset to the first frame
-            # so the character stands still.
             self.animation.frame = 0
 
-
-        # --- 5. GRAVITY & TERMINAL VELOCITY ---
         self.velocity[1] = min(5, self.velocity[1] + 0.1)
 
         if self.collisions['down']:

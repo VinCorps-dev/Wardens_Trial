@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tileset version="1.10" tiledversion="1.12.1" name="Dungeon Tile Set" tilewidth="16" tileheight="16" tilecount="270" columns="15">
- <image source="../../Tilesets/Dungeon Tile Set.png" width="240" height="288"/>
+ <image source="Dungeon Tile Set.png" width="240" height="288"/>
  <tile id="0"/>
  <tile id="1"/>
  <tile id="2"/>

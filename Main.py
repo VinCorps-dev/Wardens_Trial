@@ -10,6 +10,10 @@ from Scripts.Utilities import load_spritesheet
 from Scripts.Audio import Audio
 from Scripts.Ui_sa_game import UserInterface
 from Scripts.Animation import Animation, load_character_animations
+from Scripts.LevelManager import LevelManager # Add this import
+from Scripts.LevelSelector import LevelSelector
+
+
 
 class Game:
     def __init__(self):
@@ -30,11 +34,27 @@ class Game:
         self.assets ={
             'tiles': load_spritesheet('Tilesets/Dungeon Tile Set.png', 16),
             'goal': load_image('gems/atlas_gem.png'),
+            'back_btn': load_image('Menu Buttons/Large Buttons/Large Buttons/Back Button.png'),
+            'level_BG': load_image('Background For Levels/Background for Level Select/BG for level Select.png'),
+            'Panel_BG': load_image('Background For Levels/Background for Level Select/Bg for Panels.png'),
+            'btn_lvl1': load_image('Menu Buttons/Level buttons/Level 1.png'),
+            'btn_lvl2': load_image('Menu Buttons/Level buttons/Level 2.png'),
+            'btn_lvl3': load_image('Menu Buttons/Level buttons/Level 3.png'),
+            'btn_lvl4': load_image('Menu Buttons/Level buttons/Level 4.png'),
+            'btn_locked':load_image('Menu Buttons/Level buttons/Locked.png'),
+            'gem1': load_image('gems/atlas_gem.png'),
+            'gem2': load_image('gems/makrothumia_gem.png'),
+            'gem3': load_image('gems/peitharchia_gem.png'),
+            'gem4': load_image('gems/makrothumia_gem.png'),
         }
 
         self.assets.update(load_character_animations('player', 'Character/Makrothumia'))
 
         self.Tilemap = Tilemap(self, tile_size= 16)
+
+        # Create the manager and give it access to the game
+        self.level_manager = LevelManager(self)
+        self.level_selector = LevelSelector(self)
 
         # ✅ THEN GET SPAWN
         spawn = (self.Tilemap.spawn_point[0], self.Tilemap.spawn_point[1] - 32)  # Offset for height
@@ -45,6 +65,10 @@ class Game:
         self.scroll = [0, 0]
 
         self.audio = Audio()
+
+        # DITO MO ILAGAY ANG STEP 2 ✅
+    def start_level(self, level_id):
+        self.level_manager.load_level(level_id)
 
     def run(self):
         while True:
@@ -74,6 +98,9 @@ class Game:
                         self.menu_manager.main_menu.enable()
                 except RuntimeError:
                     pass
+
+            elif self.state == "level_select":
+                self.level_selector.update(events)
 
             # ---------------------------------------------------------
             # CASE B: NAGLALARO (Fixed Indentation & Music)

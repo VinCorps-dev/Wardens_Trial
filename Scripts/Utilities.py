@@ -5,8 +5,8 @@ import pygame
 BASE_IMG_PATH = 'Assets/'
 
 def load_image(path):
-    image = pygame.image.load(BASE_IMG_PATH + path).convert()
-    image.set_colorkey((0, 0, 0))
+    # Gamitin ang .convert_alpha() para basahin ang transparency ng PNG
+    image = pygame.image.load(BASE_IMG_PATH + path).convert_alpha()
     return image
 
 def load_images(path):
