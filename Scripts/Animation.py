@@ -41,6 +41,6 @@ def load_character_animations(e_type, base_path):
         if os.path.exists(BASE_IMG_PATH + full_path):
             dict_key = e_type + '/' + action
                 # 16 frames need a faster duration (3 or 4) to look smooth at 60fps
-            dur = 4 if action == 'walk' else 7
+            dur = 4 if action == 'walk' else 8
             animations[dict_key] = Animation(load_images(full_path), img_dur=dur)
     return animations
