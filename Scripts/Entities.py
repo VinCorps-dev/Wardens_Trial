@@ -22,7 +22,12 @@ class PhysicsEntity:
     def set_action(self, action):
         if action != self.action:
             self.action = action
-            self.animation = self.game.assets[self.e_type + '/' + self.action].copy()
+            # LIGTAS NA PAGKUHA NG ANIMATION ASSETS
+            try:
+                self.animation = self.game.assets[self.e_type + '/' + self.action].copy()
+            except KeyError:
+                # Kung hindi mahanap ang action, gamitin ang 'walk' bilang default
+                self.animation = self.game.assets[self.e_type + '/walk'].copy()
             self.animation.frame = 0
 
     def rect(self):
@@ -96,12 +101,22 @@ class PhysicsEntity:
         if movement[0] > 0: self.flip = False
         elif movement[0] < 0: self.flip = True
 
-        # 6. GOAL & DEATH CHECKS
-        goal_hitbox = pygame.Rect(Tilemap.goal_pos[0], Tilemap.goal_pos[1], 16, 16)
-        if entity_rect.colliderect(goal_hitbox):
+        goal_hitbox = None
+
+        if Tilemap.goal_pos:
+            gx, gy = Tilemap.goal_pos
+
+            goal_hitbox = pygame.Rect(
+                gx,
+                gy,
+                32, 32  # match your Tiled object size EXACTLY
+            )
+
+        if goal_hitbox and entity_rect.colliderect(goal_hitbox):
             self.game.level_manager.unlock_next_level()
             self.game.state = "level_complete"
             return
+
 
         for tile in Tilemap.tiles_around(self.pos):
             if tile["type"] == "deadly":

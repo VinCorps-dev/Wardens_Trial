@@ -67,11 +67,11 @@ class Tilemap:
                             )
                         )
 
-
-
     def load_tmx(self, filename):
         self.tmx_data = pytmx.load_pygame(filename)
         tmx_data = self.tmx_data
+
+        self.tilemap = {}  # clear
 
         for layer in tmx_data.visible_layers:
             if hasattr(layer, "data"):
@@ -79,9 +79,7 @@ class Tilemap:
                     if gid == 0:
                         continue
 
-
                     props = tmx_data.get_tile_properties_by_gid(gid) or {}
-
                     tile_type = props.get("type")
 
                     if isinstance(tile_type, str):
@@ -90,24 +88,45 @@ class Tilemap:
                         final_type = ""
 
                     image = tmx_data.get_tile_image_by_gid(gid)
+                    key = f"{x};{y}"
 
-                    self.tilemap[f"{x};{y}"] = {
+                    # 🔥 FIX: DON'T OVERWRITE GOOD TILES WITH EMPTY ONES
+                    if key in self.tilemap:
+                        existing_type = self.tilemap[key]["type"]
+
+                        # keep existing if new one is empty
+                        if final_type == "":
+                            continue
+
+                        # prioritize important types
+                        priority = {"deadly": 3, "tiles": 2, "platform": 1, "": 0}
+                        if priority.get(final_type, 0) < priority.get(existing_type, 0):
+                            continue
+
+                    self.tilemap[key] = {
                         "type": final_type,
                         "image": image,
                         "pos": (x, y)
                     }
 
-    # --- FIND SPAWN POINT ---
+        # --- SPAWN ---
         for obj in self.tmx_data.objects:
             if obj.name == "spawn":
                 self.spawn_point = (obj.x, obj.y)
 
-        self.goal_pos = (0, 0)  # Default
+        self.goal_pos = None
+
         for obj in self.tmx_data.objects:
-            if obj.name == "goal":
-                self.goal_pos = (obj.x, obj.y)
+            name = getattr(obj, "name", None)
+
+            if name and name.strip().lower() == "goal":
+                self.goal_pos = (int(obj.x), int(obj.y))
+                print("GOAL FOUND AT:", self.goal_pos)
                 break
 
+        if self.goal_pos is None:
+            print("⚠️ NO GOAL FOUND IN TILED MAP")
+            self.goal_pos = (-1000, -1000)
 
     def deadly_rects_around(self, position):
         rects = []

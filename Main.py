@@ -43,6 +43,15 @@ class Game:
             'gem4': load_image('gems/makrothumia_gem.png'),
         }
 
+        # Mga bagong background layers
+        self.assets.update({
+            'back': load_image('Background For Levels/Level 2/Cold Corridors Files/Assets/Layers/back.png'),
+            'far': load_image('Background For Levels/Level 2/Cold Corridors Files/Assets/Layers/far.png'),
+            'middle': load_image('Background For Levels/Level 2/Cold Corridors Files/Assets/Layers/middle.png'),
+            'near': load_image('Background For Levels/Level 2/Cold Corridors Files/Assets/Layers/near.png'),
+            'foreground': load_image('Background For Levels/Level 2/Cold Corridors Files/Assets/Layers/foreground.png'),
+        })
+
         # 2. INITIALIZE MANAGERS
         self.Tilemap = Tilemap(self, tile_size=16)
         self.level_manager = LevelManager(self)
@@ -50,9 +59,13 @@ class Game:
         self.menu_manager = MenuManager(self)
         self.ui = UserInterface(self)
 
-        # 3. INITIAL SETUP
+        # 3. INITIAL SETUP AT LIGTAS NA SPAWN
         self.level_manager.load_level(1)
-        spawn_pos = (self.Tilemap.spawn_point[0], self.Tilemap.spawn_point[1] - 32)
+
+        sp_x = int(float(self.Tilemap.spawn_point[0]))
+        sp_y = int(float(self.Tilemap.spawn_point[1]))
+
+        spawn_pos = (sp_x, sp_y - 32)
         self.player = PhysicsEntity(self, 'player', spawn_pos, (16, 32))
 
         # 🚀 4. STARTING STATE
@@ -62,29 +75,35 @@ class Game:
     def start_level(self, level_id):
         self.movement = [False, False]
         self.level_manager.load_level(level_id)
-        self.player.pos = [self.Tilemap.spawn_point[0], self.Tilemap.spawn_point[1] - 32]
+
+        sp_x = int(float(self.Tilemap.spawn_point[0]))
+        sp_y = int(float(self.Tilemap.spawn_point[1]))
+
+        self.player.pos = [sp_x, sp_y - 32]
         self.player.velocity = [0, 0]
         self.state = "playing"
+
+        pygame.event.clear()
 
     def run(self):
         while True:
             dt = self.clock.tick(60) / 1000.0
             events = pygame.event.get()
 
-            # Update Music based on state
-            self.audio.update_music(self.state)
+            if not pygame.mixer.music.get_busy() and self.state == "playing":
+                pass
+            else:
+                self.audio.update_music(self.state, self.level_manager.current_level)
 
             for event in events:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
 
-                # --- GLOBAL BUTTON SFX ---
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if self.state in ["main_menu", "paused", "level_complete", "level_select"]:
                         self.audio.play_sfx("Assets/Music/SFX/Button sound.mp3", 0.4)
 
-                # --- PLAYING INPUTS ---
                 if self.state == "playing":
                     ui_action = self.ui.process_events(event)
                     if ui_action == "pause_clicked":
@@ -99,7 +118,10 @@ class Game:
                             if self.player.jumps < self.player.max_jumps:
                                 self.player.velocity[1] = -3
                                 self.player.jumps += 1
-                                self.audio.play_sfx("Assets/Music/SFX/Jump.wav", 0.3)
+                                try:
+                                    self.audio.play_sfx("Assets/Music/SFX/Jump.wav", 0.3)
+                                except Exception:
+                                    pass
                         if event.key == pygame.K_DOWN: self.player.drop_through = True
                         if event.key == pygame.K_ESCAPE:
                             self.audio.play_sfx("Assets/Music/SFX/Button sound.mp3", 0.4)
@@ -110,8 +132,6 @@ class Game:
                         if event.key == pygame.K_LEFT: self.movement[0] = False
                         if event.key == pygame.K_RIGHT: self.movement[1] = False
                         if event.key == pygame.K_DOWN: self.player.drop_through = False
-
-            # --- RENDER MACHINE ---
 
             if self.state == "main_menu":
                 self.screen.fill((0, 0, 0))
@@ -126,6 +146,10 @@ class Game:
                 self.level_selector.update(events)
 
             elif self.state == "playing":
+                self.menu_manager.main_menu.disable()
+                self.menu_manager.pause_menu.disable()
+                self.menu_manager.complete_menu.disable()
+
                 # Camera logic
                 self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 30
                 self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 30
@@ -138,11 +162,37 @@ class Game:
                 self.player.update(self.Tilemap, (self.movement[1] - self.movement[0], 0), (map_w, map_h))
 
                 self.display.fill((0, 0, 0))
+                current_lvl = self.level_manager.current_level
+
+                # --- 1. RENDER PARALLAX BACKGROUND ---
+                if current_lvl == 2:
+                    layers = [
+                        {'name': 'back', 'speed': 0.1},
+                        {'name': 'far', 'speed': 0.2},
+                        {'name': 'middle', 'speed': 0.4},
+                        {'name': 'near', 'speed': 0.6},
+                        {'name': 'foreground', 'speed': 0.9}
+                    ]
+
+                    for layer in layers:
+                        img = self.assets.get(layer['name'])
+                        if img:
+                            img = pygame.transform.scale(img, (320, 240))
+                            scroll_x = (render_scroll[0] * layer['speed']) % img.get_width()
+
+                            for x in range(-1, 2):
+                                self.display.blit(img, (int(-scroll_x + x * img.get_width()), 0))
+                else:
+                    self.display.fill((0, 0, 0))
+
+                # --- 2. RENDER TILES AT OBJECTS ---
                 self.Tilemap.render(self.display, offset=render_scroll)
 
-                gem_img = self.assets.get(f'gem{self.level_manager.current_level}', self.assets['goal'])
-                self.display.blit(gem_img, (self.Tilemap.goal_pos[0] - render_scroll[0],
-                                            self.Tilemap.goal_pos[1] - render_scroll[1] - 32))
+                gem_img = self.assets.get(f'gem{current_lvl}', self.assets['goal'])
+                self.display.blit(gem_img, (
+                    self.Tilemap.goal_pos[0] - render_scroll[0] - gem_img.get_width() // 2,
+                    self.Tilemap.goal_pos[1] - render_scroll[1]
+                ))
                 self.player.render(self.display, offset=render_scroll)
 
                 self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))

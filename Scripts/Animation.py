@@ -29,7 +29,6 @@ class Animation:
                  self.done = True
 
     def img(self):
-            # Siguraduhin na integer ang index at hindi lalampas sa list size
         img_index = int(self.frame / self.img_duration)
         return self.images[img_index % len(self.images)]
 
