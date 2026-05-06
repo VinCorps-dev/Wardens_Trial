@@ -10,7 +10,7 @@ class LevelManager:
             3: ["Levels/Map 1.tmx", "Atlas"]
         }
         self.current_level = 1
-        self.unlocked_levels = [1,2]
+        self.unlocked_levels = [1,2,3,4]
 
     def is_unlocked(self, level_id):
         return level_id in self.unlocked_levels
@@ -21,6 +21,7 @@ class LevelManager:
             tmx_path, char_folder = self.levels[level_id]
             self.game.Tilemap.load_tmx(tmx_path)
 
+            # I-clear ang lumang character assets
             keys_to_remove = [k for k in self.game.assets.keys() if k.startswith('player/')]
             for k in keys_to_remove:
                 del self.game.assets[k]
@@ -29,16 +30,25 @@ class LevelManager:
             new_assets = load_character_animations('player', f'Character/{char_folder}')
             self.game.assets.update(new_assets)
 
+            # I-reset nang maayos ang posisyon ng player
             if hasattr(self.game, 'player') and self.game.player:
                 self.game.player.set_action('walk')
-                self.game.player.pos = [self.game.Tilemap.spawn_point[0], self.game.Tilemap.spawn_point[1] - 32]
+
+                # SIGURADUHING NAKATUTOK SA SPAWN POINT
+                sp_x = int(float(self.game.Tilemap.spawn_point[0]))
+                sp_y = int(float(self.game.Tilemap.spawn_point[1]))
+
+                self.game.player.pos = [sp_x, sp_y - 32]
                 self.game.player.velocity = [0, 0]
+
+                # I-reset ang camera scroll para hindi sumunod sa lumang posisyon
                 self.game.scroll = [self.game.player.pos[0] - 160, self.game.player.pos[1] - 120]
 
             self.game.state = "playing"
             print(f"Level {level_id} Loaded with {char_folder} Successfully!")
         else:
             print(f"Error: Level {level_id} not found.")
+
 
     def unlock_next_level(self):
         next_lvl = self.current_level + 1

@@ -100,38 +100,44 @@ class Game:
                     pygame.quit()
                     sys.exit()
 
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    if self.state in ["main_menu", "paused", "level_complete", "level_select"]:
-                        self.audio.play_sfx("Assets/Music/SFX/Button sound.mp3", 0.4)
 
                 if self.state == "playing":
                     ui_action = self.ui.process_events(event)
                     if ui_action == "pause_clicked":
-                        self.audio.play_sfx("Assets/Music/SFX/Button sound.mp3", 0.4)
+                        self.audio.play_sfx("Assets/Music/SFX/Button sound.mp3", )
                         self.state = "paused"
                         self.menu_manager.pause_menu.enable()
 
                     if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_LEFT: self.movement[0] = True
-                        if event.key == pygame.K_RIGHT: self.movement[1] = True
-                        if event.key == pygame.K_UP:
+                        if event.key in (pygame.K_LEFT, pygame.K_a):
+                            self.movement[0] = True
+                        if event.key in (pygame.K_RIGHT, pygame.K_d):
+                            self.movement[1] = True
+
+                        if event.key in (pygame.K_UP, pygame.K_w):
                             if self.player.jumps < self.player.max_jumps:
                                 self.player.velocity[1] = -3
                                 self.player.jumps += 1
                                 try:
-                                    self.audio.play_sfx("Assets/Music/SFX/Jump.wav", 0.3)
+                                    self.audio.play_sfx("Assets/Music/SFX/Jump.wav", )
                                 except Exception:
                                     pass
-                        if event.key == pygame.K_DOWN: self.player.drop_through = True
+
+                        if event.key in (pygame.K_DOWN, pygame.K_s):
+                            self.player.drop_through = True
+
                         if event.key == pygame.K_ESCAPE:
-                            self.audio.play_sfx("Assets/Music/SFX/Button sound.mp3", 0.4)
+                            self.audio.play_sfx("Assets/Music/SFX/Button sound.mp3")
                             self.state = "paused"
                             self.menu_manager.pause_menu.enable()
 
                     if event.type == pygame.KEYUP:
-                        if event.key == pygame.K_LEFT: self.movement[0] = False
-                        if event.key == pygame.K_RIGHT: self.movement[1] = False
-                        if event.key == pygame.K_DOWN: self.player.drop_through = False
+                        if event.key in (pygame.K_LEFT, pygame.K_a):
+                            self.movement[0] = False
+                        if event.key in (pygame.K_RIGHT, pygame.K_d):
+                            self.movement[1] = False
+                        if event.key in (pygame.K_DOWN, pygame.K_s):
+                            self.player.drop_through = False
 
             if self.state == "main_menu":
                 self.screen.fill((0, 0, 0))
@@ -185,19 +191,24 @@ class Game:
                 else:
                     self.display.fill((0, 0, 0))
 
-                # --- 2. RENDER TILES AT OBJECTS ---
+
                 self.Tilemap.render(self.display, offset=render_scroll)
 
                 gem_img = self.assets.get(f'gem{current_lvl}', self.assets['goal'])
+                gem_y_offset = 20 if current_lvl in (1, 3, 4) else 0
+
                 self.display.blit(gem_img, (
                     self.Tilemap.goal_pos[0] - render_scroll[0] - gem_img.get_width() // 2,
-                    self.Tilemap.goal_pos[1] - render_scroll[1]
+                    self.Tilemap.goal_pos[1] - render_scroll[1] - gem_y_offset
                 ))
+
                 self.player.render(self.display, offset=render_scroll)
 
                 self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
                 self.ui.update(dt)
                 self.ui.draw(self.screen)
+
+
 
             elif self.state == "paused":
                 self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
@@ -217,6 +228,20 @@ class Game:
                         self.menu_manager.complete_menu.draw(self.screen)
                 else:
                     self.menu_manager.complete_menu.enable()
+
+            elif self.state == "options":
+                # Pinturahan ang background para hindi mag-flicker
+                self.screen.fill((0, 0, 0))
+
+                # I-update at i-draw ang Options Menu
+                if self.menu_manager.options_menu.is_enabled():
+                    self.menu_manager.options_menu.update(events)
+                    if self.menu_manager.options_menu.is_enabled():
+                        self.menu_manager.options_menu.draw(self.screen)
+                else:
+                    # Kung na-click ang BACK button sa menu, babalik tayo sa main menu state
+                    self.state = "main_menu"
+                    self.menu_manager.main_menu.enable()
 
             pygame.display.update()
 

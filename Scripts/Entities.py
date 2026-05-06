@@ -122,7 +122,7 @@ class PhysicsEntity:
             if tile["type"] == "deadly":
                 d_rect = pygame.Rect(tile["pos"][0] * 16, tile["pos"][1] * 16, 16, 16)
                 if entity_rect.colliderect(d_rect):
-                    self.game.audio.play_sfx("Assets/Music/SFX/Death Sound.mp3", 0.4)
+                    self.game.audio.play_sfx("Assets/Music/SFX/Death Sound.mp3",)
                     self.pos = [self.game.Tilemap.spawn_point[0], self.game.Tilemap.spawn_point[1] - 32]
                     self.velocity = [0, 0]
 
