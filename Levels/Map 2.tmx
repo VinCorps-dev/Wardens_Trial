@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="left-up" width="300" height="18" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="6">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="left-up" width="300" height="18" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="7">
  <tileset firstgid="1" source="../Assets/Tilesets/Tiles.tsx"/>
  <layer id="1" name="Walkable tiles" width="300" height="18">
   <data encoding="csv">
@@ -46,8 +46,9 @@
 </data>
  </layer>
  <objectgroup id="5" name="spawn and goal">
-  <object id="3" name="spawn" x="14" y="152" width="16" height="32"/>
+  <object id="3" name="spawn" x="28" y="146" width="16" height="32"/>
   <object id="4" x="592" y="11" width="16" height="32"/>
   <object id="5" name="goal" x="4740" y="105" width="32" height="32"/>
+  <object id="6" name="checkpoint" x="2319" y="104" width="16" height="32"/>
  </objectgroup>
 </map>
