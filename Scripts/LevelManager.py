@@ -14,7 +14,7 @@ class LevelManager:
             4: ["Levels/Map 4.tmx", "Agnosia", False]
         }
         self.current_level = 1
-        self.unlocked_levels = [1, 2, 3, 4]
+        self.unlocked_levels = [1,]
         self.has_parallax = False  # Tagatanda kung may parallax ang map
 
     def is_unlocked(self, level_id):

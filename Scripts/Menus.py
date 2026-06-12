@@ -108,7 +108,7 @@ class MenuManager:
         # MUSIC SLIDER
         self.options_menu.add.range_slider(
             'MUSIC   ',
-            default=30,
+            default=50,
             range_values=(0, 100),
             increment=10,
             onchange=lambda x, **kwargs: self.set_music_volume(x / 100),
@@ -121,7 +121,7 @@ class MenuManager:
         # SFX SLIDER
         self.options_menu.add.range_slider(
             'SFX       ',
-            default=20,
+            default=50,
             range_values=(0, 100),
             increment=10,
             onchange=lambda x, **kwargs: self.set_sfx_volume(x / 100),
