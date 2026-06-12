@@ -7,6 +7,8 @@ class MenuManager:
     def __init__(self, game):
         self.game = game
 
+
+
         # --- 1. THEME SETUP ---
         bg_image = pygame_menu.baseimage.BaseImage(
             image_path='Assets/Background For Levels/Background for Title screen/Lamora HR.png',
@@ -150,6 +152,18 @@ class MenuManager:
         self.complete_menu.add.button('BACK TO TITLE', self.back_to_title)
         self.complete_menu.disable()
 
+        # --- 🔥 6. TIME'S UP MENU ---
+        self.time_up_menu = pygame_menu.Menu(
+            title="", width=640, height=480,
+            theme=self.complete_theme,  # Gagamitin natin ang same theme sa complete_menu
+            center_content=True
+        )
+        self.time_up_menu.add.label("TIME IS UP", font_size=40, font_color=(255, 215, 0))
+        self.time_up_menu.add.vertical_margin(40)
+        self.time_up_menu.add.button('RETRY', self.retry_level)
+        self.time_up_menu.add.button('LEVEL SELECT', self.go_to_level_select)
+        self.time_up_menu.disable()
+
         # --- 🔥 6. CHECKPOINT TEXT NOTIFICATION SETUP ---
         self.checkpoint_timer = 0
         # Gagamitin ang mismong font at kulay na gamit ng menus mo
@@ -233,3 +247,11 @@ class MenuManager:
             # I-center ang text sa itaas na bahagi ng screen (y = 80)
             text_rect = text_surf.get_rect(center=(surf.get_width() // 2, 160))
             surf.blit(text_surf, text_rect)
+
+    def retry_level(self):
+        self.time_up_menu.disable()
+        self.game.start_level(self.game.level_manager.current_level)
+
+    def go_to_level_select(self):
+        self.time_up_menu.disable()
+        self.game.state = "level_select"

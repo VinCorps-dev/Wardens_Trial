@@ -23,6 +23,13 @@ class LevelManager:
     def load_level(self, level_id):
         if level_id in self.levels:
             self.current_level = level_id
+            # TIMER SETTINGS
+            if level_id == 3:
+                self.game.ui.timer = 300
+            elif level_id == 4:
+                self.game.ui.timer = 300
+            else:
+                self.game.ui.timer = 0.0
 
             # Sinalo ang has_parallax setup mula sa self.levels config
             tmx_path, char_folder, self.has_parallax = self.levels[level_id]

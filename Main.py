@@ -203,6 +203,19 @@ class Game:
                 else:
                     self.menu_manager.complete_menu.enable()
 
+            elif self.state == "time_up":
+                self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
+                # I-draw ang UI para makita pa rin ang timer/progress kahit tapos na
+                self.ui.draw(self.screen)
+
+                # Dito natin ilalagay ang Time's Up menu
+                if self.menu_manager.time_up_menu.is_enabled():
+                    self.menu_manager.time_up_menu.update(events)
+                    if self.menu_manager.time_up_menu.is_enabled():
+                        self.menu_manager.time_up_menu.draw(self.screen)
+                else:
+                    self.menu_manager.time_up_menu.enable()
+
             elif self.state == "options":
                 self.screen.fill((0, 0, 0))
                 if self.menu_manager.options_menu.is_enabled():
