@@ -9,8 +9,8 @@ class Audio:
         self.was_paused = False
 
         # 🔊 Dito natin ise-store ang volume settings mula sa slider
-        self.music_volume = 0.1  # Default 50%
-        self.sfx_volume = 0.4  # Default 40%
+        self.music_volume = 0.5  # Default 50%
+        self.sfx_volume = 0.5  # Default 40%
 
     def update_music(self, state, level=1):
         expected_track = None
