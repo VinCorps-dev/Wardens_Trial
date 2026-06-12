@@ -22,11 +22,9 @@ class PhysicsEntity:
     def set_action(self, action):
         if action != self.action:
             self.action = action
-            # LIGTAS NA PAGKUHA NG ANIMATION ASSETS
             try:
                 self.animation = self.game.assets[self.e_type + '/' + self.action].copy()
             except KeyError:
-                # Kung hindi mahanap ang action, gamitin ang 'walk' bilang default
                 self.animation = self.game.assets[self.e_type + '/walk'].copy()
             self.animation.frame = 0
 
@@ -36,10 +34,10 @@ class PhysicsEntity:
     def update(self, Tilemap, movement=(0, 0), map_bounds=None):
         self.collisions = {'up': False, 'down': False, 'left': False, 'right': False}
 
-        # 1. APPLY GRAVITY
+        # APPLY GRAVITY
         self.velocity[1] = min(5, self.velocity[1] + 0.1)
 
-        # 2. X-AXIS MOVEMENT
+        # X-AXIS MOVEMENT
         frame_movement = [movement[0] + self.velocity[0], self.velocity[1]]
         self.pos[0] += frame_movement[0]
         entity_rect = self.rect()
@@ -53,7 +51,7 @@ class PhysicsEntity:
                     self.collisions['left'] = True
                 self.pos[0] = entity_rect.x
 
-        # 3. Y-AXIS MOVEMENT
+        # Y-AXIS MOVEMENT
         self.pos[1] += frame_movement[1]
         entity_rect = self.rect()
         for rect in Tilemap.physics_rects_around(self.pos):
@@ -69,11 +67,12 @@ class PhysicsEntity:
                     self.velocity[1] = 0
                 self.pos[1] = entity_rect.y
 
-        # 4. PLATFORM LOGIC
+        # PLATFORM LOGIC
         entity_rect = self.rect()
         for tile in Tilemap.tiles_around(self.pos):
             if tile["type"] == "platform":
-                platform_rect = pygame.Rect(tile["pos"][0] * Tilemap.tile_size, tile["pos"][1] * Tilemap.tile_size, 16, 16)
+                platform_rect = pygame.Rect(tile["pos"][0] * Tilemap.tile_size, tile["pos"][1] * Tilemap.tile_size, 16,
+                                            16)
                 if entity_rect.colliderect(platform_rect):
                     if self.velocity[1] > 0 and not self.drop_through:
                         if entity_rect.bottom <= platform_rect.top + 10:
@@ -83,7 +82,7 @@ class PhysicsEntity:
                             self.velocity[1] = 0
                             self.jumps = 0
 
-        # 5. ANIMATION LOGIC
+        # ANIMATION LOGIC
         if self.collisions['down']:
             if abs(movement[0]) > 0.1:
                 self.set_action('walk')
@@ -98,38 +97,57 @@ class PhysicsEntity:
                 self.set_action('drop')
             self.animation.update()
 
-        if movement[0] > 0: self.flip = False
-        elif movement[0] < 0: self.flip = True
+        if movement[0] > 0:
+            self.flip = False
+        elif movement[0] < 0:
+            self.flip = True
 
+        # 🔥 1. CHECKPOINT TRIGGER (BAGO)
+        # Kung may nabangga tayong checkpoint object mula sa Tilemap, i-update ang checkpoint_pos
+        if hasattr(Tilemap, 'checkpoints'):
+            for cp_rect in Tilemap.checkpoints:
+                if entity_rect.colliderect(cp_rect):
+                    # I-check kung bago ang checkpoint para hindi mag-trigger nang paulit-ulit
+                    new_pos = [cp_rect.x, cp_rect.y]
+                    if not hasattr(Tilemap, 'checkpoint_pos') or Tilemap.checkpoint_pos != new_pos:
+                        Tilemap.checkpoint_pos = new_pos
+
+                        # 🔥 TAWAG SA MENU MANAGER (Ito lang ang dinagdag natin)
+                        self.game.menu_manager.trigger_checkpoint()
+                        print("Checkpoint Reached!")
+
+        # GOAL GEM TRIGGER
         goal_hitbox = None
-
         if Tilemap.goal_pos:
             gx, gy = Tilemap.goal_pos
-
-            goal_hitbox = pygame.Rect(
-                gx,
-                gy,
-                32, 32  # match your Tiled object size EXACTLY
-            )
+            goal_hitbox = pygame.Rect(gx, gy, 32, 32)
 
         if goal_hitbox and entity_rect.colliderect(goal_hitbox):
             self.game.level_manager.unlock_next_level()
             self.game.state = "level_complete"
             return
 
-
+        # DEADLY TRAPS / SPIKES
         for tile in Tilemap.tiles_around(self.pos):
             if tile["type"] == "deadly":
                 d_rect = pygame.Rect(tile["pos"][0] * 16, tile["pos"][1] * 16, 16, 16)
                 if entity_rect.colliderect(d_rect):
-                    self.game.audio.play_sfx("Assets/Music/SFX/Death Sound.mp3",)
-                    self.pos = [self.game.Tilemap.spawn_point[0], self.game.Tilemap.spawn_point[1] - 32]
+                    try:
+                        self.game.audio.play_sfx("Assets/Music/SFX/Death Sound.mp3")
+                    except Exception:
+                        pass
+
+                    # 🔥 2. BINAGO: Imbes na spawn_point, sa checkpoint_pos na siya ibabalik!
+                    if hasattr(Tilemap, 'checkpoint_pos'):
+                        self.pos = [Tilemap.checkpoint_pos[0], Tilemap.checkpoint_pos[1]]
+                    else:
+                        self.pos = [Tilemap.spawn_point[0], Tilemap.spawn_point[1] - 32]
+
                     self.velocity = [0, 0]
 
         if map_bounds:
             self.pos[0] = max(0, min(self.pos[0], map_bounds[0] - self.size[0]))
             self.pos[1] = max(0, min(self.pos[1], map_bounds[1] - self.size[1]))
-
     def render(self, surf, offset=(0, 0)):
         img = pygame.transform.flip(self.animation.img(), self.flip, False)
         rect = img.get_rect(midbottom=(
@@ -137,3 +155,22 @@ class PhysicsEntity:
             self.pos[1] + self.size[1] - offset[1]
         ))
         surf.blit(img, rect)
+
+
+# --- CHARACTER SUBCLASSES PARA SA LEVEL MANAGER IMPORT (Selyado na) ---
+
+class Makrothumia(PhysicsEntity):
+    def __init__(self, game, e_type, pos, size):
+        super().__init__(game, e_type, pos, size)
+
+class Peitharchia(PhysicsEntity):
+    def __init__(self, game, e_type, pos, size):
+        super().__init__(game, e_type, pos, size)
+
+class Atlas(PhysicsEntity):
+    def __init__(self, game, e_type, pos, size):
+        super().__init__(game, e_type, pos, size)
+
+class Agnosia(PhysicsEntity):
+    def __init__(self, game, e_type, pos, size):
+        super().__init__(game, e_type, pos, size)

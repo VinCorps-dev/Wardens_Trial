@@ -2,13 +2,14 @@ import pygame
 
 
 class Audio:
+
     def __init__(self):
         pygame.mixer.init()
         self.current_music = None
         self.was_paused = False
 
         # 🔊 Dito natin ise-store ang volume settings mula sa slider
-        self.music_volume = 0.5  # Default 50%
+        self.music_volume = 0.1  # Default 50%
         self.sfx_volume = 0.4  # Default 40%
 
     def update_music(self, state, level=1):
@@ -23,7 +24,12 @@ class Audio:
                 expected_track = "Assets/Music/Level 2 Music.mp3"
                 # Gawing mas mahina ang level 2 music nang konti
                 volume = self.music_volume * 0.8
+            elif level == 3:
+                expected_track = "Assets/Music/Level 3.mp3"
+            elif level == 4:  # 👈 Idinagdag para sa Level 4
+                expected_track = "Assets/Music/Level 4.mp3"
             else:
+                # Ito ang magiging default para sa Level 1 (at iba pang hindi nabanggit)
                 expected_track = "Assets/Music/Background Music.mp3"
         elif state == "paused":
             expected_track = self.current_music

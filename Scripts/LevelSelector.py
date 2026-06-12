@@ -57,7 +57,7 @@ class LevelSelector:
 
             # Text background (Para mas madaling basahin)
             bg_rect = pygame.Rect(tx - 5, ty - 2, text_surf.get_width() + 10, text_surf.get_height() + 4)
-            pygame.draw.rect(self.game.screen, (20, 30, 50), bg_rect, border_radius=3)
+            pygame.draw.rect(self.game.screen, (20, 30, 60), bg_rect, border_radius=3)
             self.game.screen.blit(text_surf, (tx, ty))
 
             # C. DRAW CHARACTER PIC (Static frame lang)

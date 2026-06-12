@@ -72,6 +72,7 @@ class Tilemap:
         tmx_data = self.tmx_data
 
         self.tilemap = {}  # clear
+        self.checkpoints = []
 
         for layer in tmx_data.visible_layers:
             if hasattr(layer, "data"):
@@ -127,6 +128,17 @@ class Tilemap:
         if self.goal_pos is None:
             print("⚠️ NO GOAL FOUND IN TILED MAP")
             self.goal_pos = (-1000, -1000)
+
+
+
+        for obj in self.tmx_data.objects:
+            name = getattr(obj, "name", None)
+            if name and name.strip().lower() == "checkpoint":
+                # Gumawa ng Rect para sa bawat checkpoint para sa collision detection
+                w = getattr(obj, "width", 16)
+                h = getattr(obj, "height", 16)
+                self.checkpoints.append(pygame.Rect(int(obj.x), int(obj.y), int(w), int(h)))
+                print(f"CHECKPOINT FOUND AT: ({obj.x}, {obj.y})")
 
     def deadly_rects_around(self, position):
         rects = []

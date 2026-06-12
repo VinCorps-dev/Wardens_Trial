@@ -25,7 +25,7 @@ class Game:
         self.movement = [False, False]
         self.scroll = [0, 0]
 
-        # 1. LOAD ASSETS
+        # --- ORGANISE-ADONG ASSETS LOADING ---
         self.assets = {
             'tiles': load_spritesheet('Tilesets/Dungeon Tile Set.png', 16),
             'goal': load_image('gems/atlas_gem.png'),
@@ -40,49 +40,40 @@ class Game:
             'gem1': load_image('gems/atlas_gem.png'),
             'gem2': load_image('gems/makrothumia_gem.png'),
             'gem3': load_image('gems/peitharchia_gem.png'),
-            'gem4': load_image('gems/makrothumia_gem.png'),
-        }
+            'gem4': load_image('gems/agnosia_gem1.png'),
 
-        # Mga bagong background layers
-        self.assets.update({
+            # 🌲 LEVEL 2 PARALLAX IMAGES
             'back': load_image('Background For Levels/Level 2/Cold Corridors Files/Assets/Layers/back.png'),
             'far': load_image('Background For Levels/Level 2/Cold Corridors Files/Assets/Layers/far.png'),
             'middle': load_image('Background For Levels/Level 2/Cold Corridors Files/Assets/Layers/middle.png'),
             'near': load_image('Background For Levels/Level 2/Cold Corridors Files/Assets/Layers/near.png'),
             'foreground': load_image('Background For Levels/Level 2/Cold Corridors Files/Assets/Layers/foreground.png'),
-        })
 
-        # 2. INITIALIZE MANAGERS
+            # 🌌 LEVEL 3 PARALLAX IMAGES (I-adjust ang folder path kung iba ang sa pc mo)
+            'lvl3_night': load_image('Background For Levels/Level 3/Background for Map 3/Night.png'),
+            'lvl3_far forest': load_image('Background For Levels/Level 3/Background for Map 3/Far Forest.png'),
+            'lvl3_Dark Tree': load_image('Background For Levels/Level 3/Background for Map 3/Dark Tree.png'),
+        }
+
+        # INITIALIZE MANAGERS
         self.Tilemap = Tilemap(self, tile_size=16)
         self.level_manager = LevelManager(self)
         self.level_selector = LevelSelector(self)
         self.menu_manager = MenuManager(self)
         self.ui = UserInterface(self)
 
-        # 3. INITIAL SETUP AT LIGTAS NA SPAWN
+        # LOAD INITIAL LEVEL
         self.level_manager.load_level(1)
 
-        sp_x = int(float(self.Tilemap.spawn_point[0]))
-        sp_y = int(float(self.Tilemap.spawn_point[1]))
-
-        spawn_pos = (sp_x, sp_y - 32)
-        self.player = PhysicsEntity(self, 'player', spawn_pos, (16, 32))
-
-        # 🚀 4. STARTING STATE
+        # STARTING STATE
         self.state = "main_menu"
         self.menu_manager.main_menu.enable()
 
     def start_level(self, level_id):
         self.movement = [False, False]
         self.level_manager.load_level(level_id)
-
-        sp_x = int(float(self.Tilemap.spawn_point[0]))
-        sp_y = int(float(self.Tilemap.spawn_point[1]))
-
-        self.player.pos = [sp_x, sp_y - 32]
         self.player.velocity = [0, 0]
         self.state = "playing"
-
         pygame.event.clear()
 
     def run(self):
@@ -100,11 +91,10 @@ class Game:
                     pygame.quit()
                     sys.exit()
 
-
                 if self.state == "playing":
                     ui_action = self.ui.process_events(event)
                     if ui_action == "pause_clicked":
-                        self.audio.play_sfx("Assets/Music/SFX/Button sound.mp3", )
+                        self.audio.play_sfx("Assets/Music/SFX/Button sound.mp3")
                         self.state = "paused"
                         self.menu_manager.pause_menu.enable()
 
@@ -119,7 +109,7 @@ class Game:
                                 self.player.velocity[1] = -3
                                 self.player.jumps += 1
                                 try:
-                                    self.audio.play_sfx("Assets/Music/SFX/Jump.wav", )
+                                    self.audio.play_sfx("Assets/Music/SFX/Jump.wav")
                                 except Exception:
                                     pass
 
@@ -156,51 +146,35 @@ class Game:
                 self.menu_manager.pause_menu.disable()
                 self.menu_manager.complete_menu.disable()
 
-                # Camera logic
+                # Camera centering tracker
                 self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 30
                 self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 30
 
+                # DYNAMIC CAMERA CLAMPING
                 map_w = self.Tilemap.tmx_data.width * self.Tilemap.tile_size
                 map_h = self.Tilemap.tmx_data.height * self.Tilemap.tile_size
-                render_scroll = (int(max(0, min(self.scroll[0], map_w - 320))),
-                                 int(max(0, min(self.scroll[1], map_h - 240))))
+                render_scroll = (int(max(0, min(self.scroll[0], max(0, map_w - 320)))),
+                                 int(max(0, min(self.scroll[1], max(0, map_h - 240)))))
 
                 self.player.update(self.Tilemap, (self.movement[1] - self.movement[0], 0), (map_w, map_h))
 
-                self.display.fill((0, 0, 0))
-                current_lvl = self.level_manager.current_level
+                # 🔥 MALINIS AT DYNAMIC NA PARALLAX BACKGROUND RENDERING
+                from Scripts.LevelManager import draw_parallax_background
+                draw_parallax_background(self, self.display, render_scroll)
 
-                # --- 1. RENDER PARALLAX BACKGROUND ---
-                if current_lvl == 2:
-                    layers = [
-                        {'name': 'back', 'speed': 0.1},
-                        {'name': 'far', 'speed': 0.2},
-                        {'name': 'middle', 'speed': 0.4},
-                        {'name': 'near', 'speed': 0.6},
-                        {'name': 'foreground', 'speed': 0.9}
-                    ]
-
-                    for layer in layers:
-                        img = self.assets.get(layer['name'])
-                        if img:
-                            img = pygame.transform.scale(img, (320, 240))
-                            scroll_x = (render_scroll[0] * layer['speed']) % img.get_width()
-
-                            for x in range(-1, 2):
-                                self.display.blit(img, (int(-scroll_x + x * img.get_width()), 0))
-                else:
-                    self.display.fill((0, 0, 0))
-
-
+                # Render ng Tilemap sa ibabaw ng bg
                 self.Tilemap.render(self.display, offset=render_scroll)
 
+                # Goal Gem Rendering at Offset Adjustment
+                current_lvl = self.level_manager.current_level
                 gem_img = self.assets.get(f'gem{current_lvl}', self.assets['goal'])
-                gem_y_offset = 20 if current_lvl in (1, 3, 4) else 0
+                gem_y_offset = 5 if current_lvl in (1, 2, 3, 4) else 0
 
-                self.display.blit(gem_img, (
-                    self.Tilemap.goal_pos[0] - render_scroll[0] - gem_img.get_width() // 2,
-                    self.Tilemap.goal_pos[1] - render_scroll[1] - gem_y_offset
-                ))
+                if self.Tilemap.goal_pos:
+                    self.display.blit(gem_img, (
+                        self.Tilemap.goal_pos[0] - render_scroll[0] - gem_img.get_width() // 2,
+                        self.Tilemap.goal_pos[1] - render_scroll[1] - gem_y_offset
+                    ))
 
                 self.player.render(self.display, offset=render_scroll)
 
@@ -208,7 +182,7 @@ class Game:
                 self.ui.update(dt)
                 self.ui.draw(self.screen)
 
-
+                self.menu_manager.draw_checkpoint_notification(self.screen, dt)
 
             elif self.state == "paused":
                 self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
@@ -230,16 +204,12 @@ class Game:
                     self.menu_manager.complete_menu.enable()
 
             elif self.state == "options":
-                # Pinturahan ang background para hindi mag-flicker
                 self.screen.fill((0, 0, 0))
-
-                # I-update at i-draw ang Options Menu
                 if self.menu_manager.options_menu.is_enabled():
                     self.menu_manager.options_menu.update(events)
                     if self.menu_manager.options_menu.is_enabled():
                         self.menu_manager.options_menu.draw(self.screen)
                 else:
-                    # Kung na-click ang BACK button sa menu, babalik tayo sa main menu state
                     self.state = "main_menu"
                     self.menu_manager.main_menu.enable()
 

@@ -29,8 +29,8 @@ class MenuManager:
             theme=self.my_theme, center_content=False
         )
         self.main_menu.add.vertical_margin(70)
-        self.main_menu.add.label("WARDENS TRIAL", font_size=35, font_color=(255, 215, 0),
-                                 background_color=(0, 0, 0, 130), padding=(10, 20))
+        self.main_menu.add.label("WARDENS TRIAL", font_size=40, font_color=(255, 215, 0),
+                                 background_color=(0, 0, 0, 0), padding=(10, 20))
         self.main_menu.add.vertical_margin(80)  # Button margin
 
         self.main_menu.add.button(
@@ -106,10 +106,10 @@ class MenuManager:
         # MUSIC SLIDER
         self.options_menu.add.range_slider(
             'MUSIC   ',
-            default=50,
+            default=30,
             range_values=(0, 100),
             increment=10,
-            onchange=lambda x, **kwargs: self.set_music_volume(x / 100),  # 🌟 Idinagdag ang **kwargs
+            onchange=lambda x, **kwargs: self.set_music_volume(x / 100),
             slider_width=240,
             cursor_size=(20, 20),
             value_format=lambda x: f"{int(x)}",
@@ -119,10 +119,10 @@ class MenuManager:
         # SFX SLIDER
         self.options_menu.add.range_slider(
             'SFX       ',
-            default=40,
+            default=20,
             range_values=(0, 100),
             increment=10,
-            onchange=lambda x, **kwargs: self.set_sfx_volume(x / 100),  # 🌟 Idinagdag ang **kwargs
+            onchange=lambda x, **kwargs: self.set_sfx_volume(x / 100),
             slider_width=240,
             cursor_size=(20, 20),
             value_format=lambda x: f"{int(x)}",
@@ -150,29 +150,31 @@ class MenuManager:
         self.complete_menu.add.button('BACK TO TITLE', self.back_to_title)
         self.complete_menu.disable()
 
+        # --- 🔥 6. CHECKPOINT TEXT NOTIFICATION SETUP ---
+        self.checkpoint_timer = 0
+        # Gagamitin ang mismong font at kulay na gamit ng menus mo
+        self.notification_font = pygame.font.Font(pygame_menu.font.FONT_8BIT, 30)
+
     # --- FUNCTIONS PARA SA BUTTONS AT ACTIONS ---
 
     def open_options(self):
-        self.game.audio.play_sfx("Assets/Music/SFX/Button sound.mp3", self.game.audio.sfx_volume)
-        # 1. Itabi ang state bago pumunta sa options
+        self.game.audio.play_sfx("Assets/Music/SFX/Button sound.mp3")
         self.game.last_state = self.game.state
         self.game.state = "options"
         self.main_menu.disable()
         self.options_menu.enable()
 
     def open_options_from_pause(self):
-        self.game.audio.play_sfx("Assets/Music/SFX/Button sound.mp3", self.game.audio.sfx_volume)
-        # 2. Itabi rin kung galing sa pause menu
+        self.game.audio.play_sfx("Assets/Music/SFX/Button sound.mp3")
         self.game.last_state = self.game.state
         self.game.state = "options"
         self.pause_menu.disable()
         self.options_menu.enable()
 
     def back_to_main_from_options(self):
-        self.game.audio.play_sfx("Assets/Music/SFX/Button sound.mp3", self.game.audio.sfx_volume)
+        self.game.audio.play_sfx("Assets/Music/SFX/Button sound.mp3")
         self.options_menu.disable()
 
-        # 3. Suriin kung ang huling state ay "paused"
         if hasattr(self.game, 'last_state') and self.game.last_state == "paused":
             self.game.state = "paused"
             self.pause_menu.enable()
@@ -193,7 +195,7 @@ class MenuManager:
         pygame.mixer.music.pause()
 
     def start_game(self):
-        self.game.audio.play_sfx("Assets/Music/SFX/Button sound.mp3", self.game.audio.sfx_volume)
+        self.game.audio.play_sfx("Assets/Music/SFX/Button sound.mp3")
         self.game.state = "level_select"
         self.main_menu.disable()
 
@@ -210,6 +212,24 @@ class MenuManager:
         self.main_menu.enable()
 
     def quit_program(self):
-        self.game.audio.play_sfx("Assets/Music/SFX/Button sound.mp3", self.game.audio.sfx_volume)
+        self.game.audio.play_sfx("Assets/Music/SFX/Button sound.mp3")
         pygame.quit()
         sys.exit()
+
+    # --- 🔥 MGA BAGONG CHECKPOINT NOTIFICATION FUNCTIONS ---
+
+    def trigger_checkpoint(self):
+        """Tatawagin ito kapag nakabangga ng checkpoint."""
+        self.checkpoint_timer = 2.0  # Oras kung gaano katagal sa screen (2 seconds)
+
+    def draw_checkpoint_notification(self, surf, dt):
+        """Tatawagin ito kada frame para i-draw ang text kung active ang timer."""
+        if self.checkpoint_timer > 0:
+            self.checkpoint_timer -= dt
+
+            # Render ng text gamit ang kulay ginto/dilaw (255, 215, 0)
+            text_surf = self.notification_font.render("CHECKPOINT REACHED", True, (255, 215, 0))
+
+            # I-center ang text sa itaas na bahagi ng screen (y = 80)
+            text_rect = text_surf.get_rect(center=(surf.get_width() // 2, 160))
+            surf.blit(text_surf, text_rect)
